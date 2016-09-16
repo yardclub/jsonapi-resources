@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Jsonapi-resources by cerebris</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Jsonapi-resources</h1>
+      <h2 class="project-tagline">A resource-focused Rails library for developing JSON API compliant servers.</h2>
+      <a href="https://github.com/cerebris/jsonapi-resources" class="btn">View on GitHub</a>
+      <a href="https://github.com/cerebris/jsonapi-resources/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/cerebris/jsonapi-resources/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="jsonapiresources" class="anchor" href="#jsonapiresources" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>JSONAPI::Resources</h1>
+
+<p><code>JSONAPI::Resources</code>, or "JR", provides a framework for developing a server that complies with the
+<a href="http://jsonapi.org/">JSON API</a> specification.</p>
+
+<p>Like JSON API itself, JR's design is focused on the resources served by an API. JR needs little more than a definition
+of your resources, including their attributes and relationships, to make your server compliant with JSON API.</p>
+
+<p>JR is designed to work with Rails 4.0+, and provides custom routes, controllers, and serializers. JR's resources may be
+backed by ActiveRecord models or by custom objects.</p>
+
+<h2>
+<a id="table-of-contents" class="anchor" href="#table-of-contents" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Table of Contents</h2>
+
+<ul>
+<li><a href="#demo-app">Demo App</a></li>
+<li><a href="#client-libraries">Client Libraries</a></li>
+<li><a href="#installation">Installation</a></li>
+<li>
+<a href="#usage">Usage</a>
+
+<ul>
+<li>
+<a href="#resources">Resources</a>
+
+<ul>
+<li><a href="#jsonapiresource">JSONAPI::Resource</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#attributes">Attributes</a></li>
+<li><a href="#primary-key">Primary Key</a></li>
+<li><a href="#model-name">Model Name</a></li>
+<li><a href="#model-hints">Model Hints</a></li>
+<li><a href="#relationships">Relationships</a></li>
+<li><a href="#filters">Filters</a></li>
+<li><a href="#pagination">Pagination</a></li>
+<li><a href="#included-relationships-side-loading-resources">Included relationships (side-loading resources)</a></li>
+<li><a href="#resource-meta">Resource meta</a></li>
+<li><a href="#custom-links">Custom Links</a></li>
+<li><a href="#callbacks">Callbacks</a></li>
+</ul>
+</li>
+<li>
+<a href="#controllers">Controllers</a>
+
+<ul>
+<li><a href="#namespaces">Namespaces</a></li>
+<li><a href="#error-codes">Error Codes</a></li>
+<li><a href="#handling-exceptions">Handling Exceptions</a></li>
+<li><a href="#action-callbacks">Action Callbacks</a></li>
+</ul>
+</li>
+<li><a href="#operation-processors">Operation Processors</a></li>
+<li>
+<a href="#serializer">Serializer</a>
+
+<ul>
+<li><a href="#serializer-options">Serializer options</a></li>
+<li><a href="#formatting">Formatting</a></li>
+<li><a href="#key-format">Key Format</a></li>
+</ul>
+</li>
+<li>
+<a href="#routing">Routing</a>
+
+<ul>
+<li><a href="#nested-routes">Nested Routes</a></li>
+</ul>
+</li>
+<li><a href="#authorization">Authorization</a></li>
+<li>
+<a href="#resource-caching">Resource Caching</a>
+
+<ul>
+<li><a href="#caching-caveats">Caching Caveats</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#contributing">Contributing</a></li>
+<li><a href="#license">License</a></li>
+</ul>
+
+<h2>
+<a id="demo-app" class="anchor" href="#demo-app" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Demo App</h2>
+
+<p>We have a simple demo app, called <a href="https://github.com/cerebris/peeps">Peeps</a>, available to show how JR is used.</p>
+
+<h2>
+<a id="client-libraries" class="anchor" href="#client-libraries" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Client Libraries</h2>
+
+<p>JSON API maintains a (non-verified) listing of <a href="http://jsonapi.org/implementations/#client-libraries">client libraries</a>
+which <em>should</em> be compatible with JSON API compliant server implementations such as JR.</p>
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
+
+<p>Add JR to your application's <code>Gemfile</code>:</p>
+
+<pre><code>gem 'jsonapi-resources'
+</code></pre>
+
+<p>And then execute:</p>
+
+<pre><code>$ bundle
+</code></pre>
+
+<p>Or install it yourself as:</p>
+
+<pre><code>$ gem install jsonapi-resources
+</code></pre>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
+
+<h3>
+<a id="resources" class="anchor" href="#resources" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Resources</h3>
+
+<p>Resources define the public interface to your API. A resource defines which attributes are exposed, as well as
+relationships to other resources.</p>
+
+<p>Resource definitions should by convention be placed in a directory under app named resources, <code>app/resources</code>. The file name should be the single underscored name of the model that backs the resource with <code>_resource.rb</code> appended. For example,
+a <code>Contact</code> model's resource should have a class named <code>ContactResource</code> defined in a file named <code>contact_resource.rb</code>.</p>
+
+<h4>
+<a id="jsonapiresource" class="anchor" href="#jsonapiresource" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>JSONAPI::Resource</h4>
+
+<p>Resources must be derived from <code>JSONAPI::Resource</code>, or a class that is itself derived from <code>JSONAPI::Resource</code>.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ContactResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+<span class="pl-k">end</span></pre></div>
+
+<p>A jsonapi-resource generator is available</p>
+
+<pre><code>rails generate jsonapi:resource contact
+</code></pre>
+
+<h5>
+<a id="abstract-resources" class="anchor" href="#abstract-resources" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Abstract Resources</h5>
+
+<p>Resources that are not backed by a model (purely used as base classes for other resources) should be declared as
+abstract.</p>
+
+<p>Because abstract resources do not expect to be backed by a model, they won't attempt to discover the model class
+or any of its relationships.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">BaseResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  abstract
+
+  has_one <span class="pl-c1">:creator</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">ContactResource<span class="pl-e"> &lt; BaseResource</span></span>
+<span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="immutable-resources" class="anchor" href="#immutable-resources" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Immutable Resources</h5>
+
+<p>Resources that are immutable should be declared as such with the <code>immutable</code> method. Immutable resources will only
+generate routes for <code>index</code>, <code>show</code> and <code>show_relationship</code>.</p>
+
+<h6>
+<a id="immutable-for-readonly" class="anchor" href="#immutable-for-readonly" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Immutable for Readonly</h6>
+
+<p>Some resources are read-only and are not to be modified through the API. Declaring a resource as immutable prevents
+creation of routes that allow modification of the resource.</p>
+
+<h6>
+<a id="immutable-heterogeneous-collections" class="anchor" href="#immutable-heterogeneous-collections" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Immutable Heterogeneous Collections</h6>
+
+<p>Immutable resources can be used as the basis for a heterogeneous collection. Resources in heterogeneous collections can
+still be mutated through their own type-specific endpoints.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">VehicleResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  immutable
+
+  has_one <span class="pl-c1">:owner</span>
+  attributes <span class="pl-c1">:make</span>, <span class="pl-c1">:model</span>, <span class="pl-c1">:serial_number</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">CarResource<span class="pl-e"> &lt; VehicleResource</span></span>
+  attributes <span class="pl-c1">:drive_layout</span>
+  has_one <span class="pl-c1">:driver</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">BoatResource<span class="pl-e"> &lt; VehicleResource</span></span>
+  attributes <span class="pl-c1">:length_at_water_line</span>
+  has_one <span class="pl-c1">:captain</span>
+<span class="pl-k">end</span>
+
+<span class="pl-c"># routes</span>
+  jsonapi_resources <span class="pl-c1">:vehicles</span>
+  jsonapi_resources <span class="pl-c1">:cars</span>
+  jsonapi_resources <span class="pl-c1">:boats</span>
+</pre></div>
+
+<p>In the above example vehicles are immutable. A call to <code>/vehicles</code> or <code>/vehicles/1</code> will return vehicles with types
+of either <code>car</code> or <code>boat</code>. But calls to PUT or POST a <code>car</code> must be made to <code>/cars</code>. The rails models backing the above
+code use Single Table Inheritance.</p>
+
+<h4>
+<a id="context" class="anchor" href="#context" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Context</h4>
+
+<p>Sometimes you will want to access things such as the current logged in user (and other state only available within your controllers) from within your resource classes. To make this state available to a resource class you need to put it into the context hash - this can be done via a <code>context</code> method on one of your controllers or across all controllers using ApplicationController.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ApplicationController<span class="pl-e"> &lt; JSONAPI::ResourceController</span></span>
+  <span class="pl-k">def</span> <span class="pl-en">context</span>
+    {<span class="pl-c1">current_user:</span> current_user}
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span>
+
+<span class="pl-c"># Specific resource controllers derive from ApplicationController</span>
+<span class="pl-c"># and share its context</span>
+<span class="pl-k">class</span> <span class="pl-en">PeopleController<span class="pl-e"> &lt; ApplicationController</span></span>
+
+<span class="pl-k">end</span>
+
+<span class="pl-c"># Assuming you don't permit user_id (so the client won't assign a wrong user to own the object)</span>
+<span class="pl-c"># you can ensure the current user is assigned the record by using the controller's context hash.</span>
+<span class="pl-k">class</span> <span class="pl-en">PeopleResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  before_save <span class="pl-k">do</span>
+    <span class="pl-smi">@model</span>.user_id <span class="pl-k">=</span> context[<span class="pl-c1">:current_user</span>].id <span class="pl-k">if</span> <span class="pl-smi">@model</span>.new_record?
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>You can put things that affect serialization and resource configuration into the context.</p>
+
+<h4>
+<a id="attributes" class="anchor" href="#attributes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Attributes</h4>
+
+<p>Any of a resource's attributes that are accessible must be explicitly declared. Single attributes can be declared using
+the <code>attribute</code> method, and multiple attributes can be declared with the <code>attributes</code> method on the resource class.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ContactResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:name_first</span>
+  attributes <span class="pl-c1">:name_last</span>, <span class="pl-c1">:email</span>, <span class="pl-c1">:twitter</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>This resource has 4 defined attributes: <code>name_first</code>, <code>name_last</code>, <code>email</code>, <code>twitter</code>, as well as the automatically
+defined attributes <code>id</code> and <code>type</code>. By default these attributes must exist on the model that is handled by the resource.</p>
+
+<p>A resource object wraps a Ruby object, usually an <code>ActiveModel</code> record, which is available as the <code>@model</code> variable.
+This allows a resource's methods to access the underlying model.</p>
+
+<p>For example, a computed attribute for <code>full_name</code> could be defined as such:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ContactResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name_first</span>, <span class="pl-c1">:name_last</span>, <span class="pl-c1">:email</span>, <span class="pl-c1">:twitter</span>
+  attribute <span class="pl-c1">:full_name</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">full_name</span>
+    <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pse">#{</span><span class="pl-s1"><span class="pl-smi">@model</span>.name_first</span><span class="pl-pse"><span class="pl-s1">}</span></span>, <span class="pl-pse">#{</span><span class="pl-s1"><span class="pl-smi">@model</span>.name_last</span><span class="pl-pse"><span class="pl-s1">}</span></span><span class="pl-pds">"</span></span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="attribute-delegation" class="anchor" href="#attribute-delegation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Attribute Delegation</h5>
+
+<p>Normally resource attributes map to an attribute on the model of the same name. Using the <code>delegate</code> option allows a resource
+attribute to map to a differently named model attribute. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ContactResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:name_first</span>, <span class="pl-c1">delegate:</span> <span class="pl-c1">:first_name</span>
+  attribute <span class="pl-c1">:name_last</span>, <span class="pl-c1">delegate:</span> <span class="pl-c1">:last_name</span>
+<span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="fetchable-attributes" class="anchor" href="#fetchable-attributes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Fetchable Attributes</h5>
+
+<p>By default all attributes are assumed to be fetchable. The list of fetchable attributes can be filtered by overriding
+the <code>fetchable_fields</code> method.</p>
+
+<p>Here's an example that prevents guest users from seeing the <code>email</code> field:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">AuthorResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name</span>, <span class="pl-c1">:email</span>
+  model_name <span class="pl-s"><span class="pl-pds">'</span>Person<span class="pl-pds">'</span></span>
+  has_many <span class="pl-c1">:posts</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">fetchable_fields</span>
+    <span class="pl-k">if</span> (context[<span class="pl-c1">:current_user</span>].guest)
+      <span class="pl-k">super</span> <span class="pl-k">-</span> [<span class="pl-c1">:email</span>]
+    <span class="pl-k">else</span>
+      <span class="pl-k">super</span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>Context flows through from the controller to the resource and can be used to control the attributes based on the
+current user (or other value).</p>
+
+<h5>
+<a id="creatable-and-updatable-attributes" class="anchor" href="#creatable-and-updatable-attributes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Creatable and Updatable Attributes</h5>
+
+<p>By default all attributes are assumed to be updatable and creatable. To prevent some attributes from being accepted by
+the <code>update</code> or <code>create</code> methods, override the <code>self.updatable_fields</code> and <code>self.creatable_fields</code> methods on a resource.</p>
+
+<p>This example prevents <code>full_name</code> from being set:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ContactResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name_first</span>, <span class="pl-c1">:name_last</span>, <span class="pl-c1">:full_name</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">full_name</span>
+    <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pse">#{</span><span class="pl-s1"><span class="pl-smi">@model</span>.name_first</span><span class="pl-pse"><span class="pl-s1">}</span></span>, <span class="pl-pse">#{</span><span class="pl-s1"><span class="pl-smi">@model</span>.name_last</span><span class="pl-pse"><span class="pl-s1">}</span></span><span class="pl-pds">"</span></span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">self.updatable_fields</span>(<span class="pl-smi">context</span>)
+    <span class="pl-k">super</span> <span class="pl-k">-</span> [<span class="pl-c1">:full_name</span>]
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">self.creatable_fields</span>(<span class="pl-smi">context</span>)
+    <span class="pl-k">super</span> <span class="pl-k">-</span> [<span class="pl-c1">:full_name</span>]
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>The <code>context</code> is not by default used by the <code>ResourceController</code>, but may be used if you override the controller methods.
+By using the context you have the option to determine the creatable and updatable fields based on the user.</p>
+
+<h5>
+<a id="sortable-attributes" class="anchor" href="#sortable-attributes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sortable Attributes</h5>
+
+<p>JR supports <a href="http://jsonapi.org/format/#fetching-sorting">sorting primary resources by multiple sort criteria</a>.</p>
+
+<p>By default all attributes are assumed to be sortable. To prevent some attributes from being sortable, override the
+<code>self.sortable_fields</code> method on a resource.</p>
+
+<p>Here's an example that prevents sorting by post's <code>body</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:title</span>, <span class="pl-c1">:body</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">self.sortable_fields</span>(<span class="pl-smi">context</span>)
+    <span class="pl-k">super</span>(context) <span class="pl-k">-</span> [<span class="pl-c1">:body</span>]
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>JR also supports sorting primary resources by fields on relationships.</p>
+
+<p>Here's an example of sorting books by the author name:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">Book<span class="pl-e"> &lt; ActiveRecord::Base</span></span>
+    belongs_to <span class="pl-c1">:author</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">Author<span class="pl-e"> &lt; ActiveRecord::Base</span></span>
+    has_many <span class="pl-c1">:books</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">BookResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:title</span>, <span class="pl-c1">:body</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">self.sortable_fields</span>(<span class="pl-smi">context</span>)
+    <span class="pl-k">super</span>(context) <span class="pl-k">&lt;&lt;</span> <span class="pl-c1">:"author.name"</span>
+   <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>The request will look something like:</p>
+
+<pre><code>GET /books?include=author&amp;sort=author.name
+</code></pre>
+
+<h6>
+<a id="default-sorting" class="anchor" href="#default-sorting" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Default sorting</h6>
+
+<p>By default JR sorts ascending on the <code>id</code> of the primary resource, unless the request specifies an alternate sort order.
+To override this you may override the <code>self.default_sort</code> on a <code>resource</code>. <code>default_sort</code> should return an array of
+<code>sort_param</code> hashes. A <code>sort_param</code> hash contains a <code>field</code> and a <code>direction</code>, with <code>direction</code> being either <code>:asc</code> or
+<code>:desc</code>.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">def</span> <span class="pl-en">self.default_sort</span>
+    [{<span class="pl-c1">field:</span> <span class="pl-s"><span class="pl-pds">'</span>name_last<span class="pl-pds">'</span></span>, <span class="pl-c1">direction:</span> <span class="pl-c1">:desc</span>}, {<span class="pl-c1">field:</span> <span class="pl-s"><span class="pl-pds">'</span>name_first<span class="pl-pds">'</span></span>, <span class="pl-c1">direction:</span> <span class="pl-c1">:desc</span>}]
+  <span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="attribute-formatting" class="anchor" href="#attribute-formatting" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Attribute Formatting</h5>
+
+<p>Attributes can have a <code>Format</code>. By default all attributes use the default formatter. If an attribute has the <code>format</code>
+option set the system will attempt to find a formatter based on this name. In the following example the <code>last_login_time</code>
+will be returned formatted to a certain time zone:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PersonResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name</span>, <span class="pl-c1">:email</span>
+  attribute <span class="pl-c1">:last_login_time</span>, <span class="pl-c1">format:</span> <span class="pl-c1">:date_with_timezone</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>The system will lookup a value formatter named <code>DateWithTimezoneValueFormatter</code> and will use this when serializing and
+updating the attribute. See the <a href="#value-formatters">Value Formatters</a> section for more details.</p>
+
+<h5>
+<a id="flattening-a-rails-relationship" class="anchor" href="#flattening-a-rails-relationship" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Flattening a Rails relationship</h5>
+
+<p>It is possible to flatten Rails relationships into attributes by using getters and setters. This can become handy if a relation needs to be created alongside the creation of the main object which can be the case if there is a bi-directional presence validation. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># Given Models</span>
+<span class="pl-k">class</span> <span class="pl-en">Person<span class="pl-e"> &lt; ActiveRecord::Base</span></span>
+  has_many <span class="pl-c1">:spoken_languages</span>
+  validates <span class="pl-c1">:name</span>, <span class="pl-c1">:email</span>, <span class="pl-c1">:spoken_languages</span>, <span class="pl-c1">presence:</span> <span class="pl-c1">true</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">SpokenLanguage<span class="pl-e"> &lt; ActiveRecord::Base</span></span>
+  belongs_to <span class="pl-c1">:person</span>, <span class="pl-c1">inverse_of:</span> <span class="pl-c1">:spoken_languages</span>
+  validates <span class="pl-c1">:person</span>, <span class="pl-c1">:language_code</span>, <span class="pl-c1">presence:</span> <span class="pl-c1">true</span>
+<span class="pl-k">end</span>
+
+<span class="pl-c"># Resource with getters and setter</span>
+<span class="pl-k">class</span> <span class="pl-en">PersonResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name</span>, <span class="pl-c1">:email</span>, <span class="pl-c1">:spoken_languages</span>
+
+  <span class="pl-c"># Getter</span>
+  <span class="pl-k">def</span> <span class="pl-en">spoken_languages</span>
+    <span class="pl-smi">@model</span>.spoken_languages.pluck(<span class="pl-c1">:language_code</span>)
+  <span class="pl-k">end</span>
+
+  <span class="pl-c"># Setter (because spoken_languages needed for creation)</span>
+  <span class="pl-k">def</span> <span class="pl-en">spoken_languages=</span>(<span class="pl-smi">new_spoken_language_codes</span>)
+    <span class="pl-smi">@model</span>.spoken_languages.destroy_all
+    new_spoken_language_codes.each <span class="pl-k">do </span>|<span class="pl-smi">new_lang_code</span>|
+      <span class="pl-smi">@model</span>.spoken_languages.build(<span class="pl-c1">language_code:</span> new_lang_code)
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="primary-key" class="anchor" href="#primary-key" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Primary Key</h4>
+
+<p>Resources are always represented using a key of <code>id</code>. The resource will interrogate the model to find the primary key.
+If the underlying model does not use <code>id</code> as the primary key <em>and</em> does not support the <code>primary_key</code> method you
+must use the <code>primary_key</code> method to tell the resource which field on the model to use as the primary key. <strong>Note:</strong>
+this <em>must</em> be the actual primary key of the model.</p>
+
+<p>By default only integer values are allowed for primary key. To change this behavior you can set the <code>resource_key_type</code>
+configuration option:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">JSONAPI</span>.configure <span class="pl-k">do </span>|<span class="pl-smi">config</span>|
+  <span class="pl-c"># Allowed values are :integer(default), :uuid, :string, or a proc</span>
+  config.resource_key_type <span class="pl-k">=</span> <span class="pl-c1">:uuid</span>
+<span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="override-key-type-on-a-resource" class="anchor" href="#override-key-type-on-a-resource" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Override key type on a resource</h5>
+
+<p>You can override the default resource key type on a per-resource basis by calling <code>key_type</code> in the resource class,
+with the same allowed values as the <code>resource_key_type</code> configuration option.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ContactResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:id</span>
+  attributes <span class="pl-c1">:name_first</span>, <span class="pl-c1">:name_last</span>, <span class="pl-c1">:email</span>, <span class="pl-c1">:twitter</span>
+  key_type <span class="pl-c1">:uuid</span>
+<span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="custom-resource-key-validators" class="anchor" href="#custom-resource-key-validators" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Custom resource key validators</h5>
+
+<p>If you need more control over the key, you can override the #verify_key method on your resource, or set a lambda that
+accepts key and context arguments in <code>config/initializers/jsonapi_resources.rb</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">JSONAPI</span>.configure <span class="pl-k">do </span>|<span class="pl-smi">config</span>|
+  config.resource_key_type <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> (key, context) { key <span class="pl-k">&amp;&amp;</span> <span class="pl-c1">String</span>(key) }
+<span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="model-name" class="anchor" href="#model-name" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Model Name</h4>
+
+<p>The name of the underlying model is inferred from the Resource name. It can be overridden by use of the <code>model_name</code>
+method. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">AuthorResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:name</span>
+  model_name <span class="pl-s"><span class="pl-pds">'</span>Person<span class="pl-pds">'</span></span>
+  has_many <span class="pl-c1">:posts</span>
+<span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="model-hints" class="anchor" href="#model-hints" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Model Hints</h4>
+
+<p>Resource instances are created from model records. The determination of the correct resource type is performed using a
+simple rule based on the model's name. The name is used to find a resource in the same module (as the originating
+resource) that matches the name. This usually works quite well, however it can fail when model names do not match
+resource names. It can also fail when using namespaced models. In this case a <code>model_hint</code> can be created to map model
+names to resources. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">AuthorResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:name</span>
+  model_name <span class="pl-s"><span class="pl-pds">'</span>Person<span class="pl-pds">'</span></span>
+  model_hint <span class="pl-c1">model:</span> <span class="pl-c1">Commenter</span>, <span class="pl-c1">resource:</span> <span class="pl-c1">:special_person</span>
+
+  has_many <span class="pl-c1">:posts</span>
+  has_many <span class="pl-c1">:commenters</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>Note that when <code>model_name</code> is set a corresponding <code>model_hint</code> is also added. This can be skipped by using the
+<code>add_model_hint</code> option set to false. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">AuthorResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  model_name <span class="pl-s"><span class="pl-pds">'</span>Legacy::Person<span class="pl-pds">'</span></span>, <span class="pl-c1">add_model_hint:</span> <span class="pl-c1">false</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>Model hints inherit from parent resources, but are not global in scope. The <code>model_hint</code> method accepts <code>model</code> and
+<code>resource</code> named parameters. <code>model</code> takes an ActiveRecord class or class name (defaults to the model name), and
+<code>resource</code> takes a resource type or a resource class (defaults to the current resource's type).</p>
+
+<h4>
+<a id="relationships" class="anchor" href="#relationships" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Relationships</h4>
+
+<p>Related resources need to be specified in the resource. These may be declared with the <code>relationship</code> or the <code>has_one</code>
+and the <code>has_many</code> methods.</p>
+
+<p>Here's a simple example using the <code>relationship</code> method where a post has a single author and an author can have many
+posts:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:title</span>, <span class="pl-c1">:body</span>
+
+  relationship <span class="pl-c1">:author</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:one</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>And the corresponding author:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">AuthorResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:name</span>
+
+  relationship <span class="pl-c1">:posts</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:many</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>And here's the equivalent resources using the <code>has_one</code> and <code>has_many</code> methods:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:title</span>, <span class="pl-c1">:body</span>
+
+  has_one <span class="pl-c1">:author</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>And the corresponding author:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">AuthorResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:name</span>
+
+  has_many <span class="pl-c1">:posts</span>
+<span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="options" class="anchor" href="#options" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Options</h5>
+
+<p>The relationship methods (<code>relationship</code>, <code>has_one</code>, and <code>has_many</code>) support the following options:</p>
+
+<ul>
+<li>
+<code>class_name</code> - a string specifying the underlying class for the related resource. Defaults to the <code>class_name</code> property on the underlying model.</li>
+<li>
+<code>foreign_key</code> - the method on the resource used to fetch the related resource. Defaults to <code>&lt;resource_name&gt;_id</code> for has_one and <code>&lt;resource_name&gt;_ids</code> for has_many relationships.</li>
+<li>
+<code>acts_as_set</code> - allows the entire set of related records to be replaced in one operation. Defaults to false if not set.</li>
+<li>
+<code>polymorphic</code> - set to true to identify relationships that are polymorphic.</li>
+<li>
+<code>relation_name</code> - the name of the relation to use on the model. A lambda may be provided which allows conditional selection of the relation based on the context.</li>
+<li>
+<code>always_include_linkage_data</code> - if set to true, the relationship includes linkage data. Defaults to false if not set.</li>
+<li>
+<code>eager_load_on_include</code> - if set to false, will not include this relationship in join SQL when requested via an include. You usually want to leave this on, but it will break 'relationships' which are not active record, for example if you want to expose a tree using the <code>ancestry</code> gem or similar, or the SQL query becomes too large to handle. Defaults to true if not set.</li>
+</ul>
+
+<p><code>to_one</code> relationships support the additional option:</p>
+
+<ul>
+<li>
+<code>foreign_key_on</code> - defaults to <code>:self</code>. To indicate that the foreign key is on the related resource specify <code>:related</code>.</li>
+</ul>
+
+<p><code>to_many</code> relationships support the additional option:</p>
+
+<ul>
+<li>
+<code>reflect</code> - defaults to <code>true</code>. To indicate that updates to the relationship are performed on the related resource, if relationship reflection is turned on. See <a href="#configuration">Configuration</a>
+</li>
+</ul>
+
+<p>Examples:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">CommentResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:body</span>
+  has_one <span class="pl-c1">:post</span>
+  has_one <span class="pl-c1">:author</span>, <span class="pl-c1">class_name:</span> <span class="pl-s"><span class="pl-pds">'</span>Person<span class="pl-pds">'</span></span>
+  has_many <span class="pl-c1">:tags</span>, <span class="pl-c1">acts_as_set:</span> <span class="pl-c1">true</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">ExpenseEntryResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:cost</span>, <span class="pl-c1">:transaction_date</span>
+
+  has_one <span class="pl-c1">:currency</span>, <span class="pl-c1">class_name:</span> <span class="pl-s"><span class="pl-pds">'</span>Currency<span class="pl-pds">'</span></span>, <span class="pl-c1">foreign_key:</span> <span class="pl-s"><span class="pl-pds">'</span>currency_code<span class="pl-pds">'</span></span>
+  has_one <span class="pl-c1">:employee</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">TagResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name</span>
+  has_one <span class="pl-c1">:taggable</span>, <span class="pl-c1">polymorphic:</span> <span class="pl-c1">true</span>
+<span class="pl-k">end</span></pre></div>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">BookResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+
+  <span class="pl-c"># Only book_admins may see unapproved comments for a book. Using</span>
+  <span class="pl-c"># a lambda to select the correct relation on the model</span>
+  has_many <span class="pl-c1">:book_comments</span>, <span class="pl-c1">relation_name:</span> <span class="pl-k">-</span><span class="pl-k">&gt;</span> (options <span class="pl-k">=</span> {}) {
+    context <span class="pl-k">=</span> options[<span class="pl-c1">:context</span>]
+    current_user <span class="pl-k">=</span> context <span class="pl-k">?</span> context[<span class="pl-c1">:current_user</span>] : <span class="pl-c1">nil</span>
+
+    <span class="pl-k">unless</span> current_user <span class="pl-k">&amp;&amp;</span> current_user.book_admin
+      <span class="pl-c1">:approved_book_comments</span>
+    <span class="pl-k">else</span>
+      <span class="pl-c1">:book_comments</span>
+    <span class="pl-k">end</span>
+  }
+  ...
+<span class="pl-k">end</span></pre></div>
+
+<p>The polymorphic relationship will require the resource and controller to exist, although routing to them will cause an
+error.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">TaggableResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>; <span class="pl-k">end</span>
+<span class="pl-k">class</span> <span class="pl-en">TaggablesController<span class="pl-e"> &lt; JSONAPI::ResourceController</span></span>; <span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="filters" class="anchor" href="#filters" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Filters</h4>
+
+<p>Filters for locating objects of the resource type are specified in the resource definition. Single filters can be
+declared using the <code>filter</code> method, and multiple filters can be declared with the <code>filters</code> method on the resource
+class.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ContactResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name_first</span>, <span class="pl-c1">:name_last</span>, <span class="pl-c1">:email</span>, <span class="pl-c1">:twitter</span>
+
+  filter <span class="pl-c1">:id</span>
+  filters <span class="pl-c1">:name_first</span>, <span class="pl-c1">:name_last</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>Then a request could pass in a filter for example <code>http://example.com/contacts?filter[name_last]=Smith</code> and the system
+will find all people where the last name exactly matches Smith.</p>
+
+<h5>
+<a id="default-filters" class="anchor" href="#default-filters" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Default Filters</h5>
+
+<p>A default filter may be defined for a resource using the <code>default</code> option on the <code>filter</code> method. This default is used
+unless the request overrides this value.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre> <span class="pl-k">class</span> <span class="pl-en">CommentResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:body</span>, <span class="pl-c1">:status</span>
+  has_one <span class="pl-c1">:post</span>
+  has_one <span class="pl-c1">:author</span>
+
+  filter <span class="pl-c1">:status</span>, <span class="pl-c1">default:</span> <span class="pl-s"><span class="pl-pds">'</span>published,pending<span class="pl-pds">'</span></span>
+<span class="pl-k">end</span></pre></div>
+
+<p>The default value is used as if it came from the request.</p>
+
+<h5>
+<a id="applying-filters" class="anchor" href="#applying-filters" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Applying Filters</h5>
+
+<p>You may customize how a filter behaves by supplying a callable to the <code>:apply</code> option. This callable will be used to
+apply that filter. The callable is passed the <code>records</code>, which is an <code>ActiveRecord::Relation</code>, the <code>value</code>, and an
+<code>_options</code> hash. It is expected to return an <code>ActiveRecord::Relation</code>.</p>
+
+<p>Note: When a filter is not supplied a <code>verify</code> callable to modify the <code>value</code> that the <code>apply</code> callable receives,
+<code>value</code> defaults to an array of the string values provided to the filter parameter.</p>
+
+<p>This example shows how you can implement different approaches for different filters.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># When given the following parameter:'filter[visibility]': 'public'</span>
+
+filter <span class="pl-c1">:visibility</span>, <span class="pl-c1">apply:</span> <span class="pl-k">-</span><span class="pl-k">&gt;</span>(records, value, _options) {
+  records.where(<span class="pl-s"><span class="pl-pds">'</span>users.publicly_visible = ?<span class="pl-pds">'</span></span>, value[<span class="pl-c1">0</span>] <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span>public<span class="pl-pds">'</span></span>)
+}</pre></div>
+
+<p>If you omit the <code>apply</code> callable the filter will be applied as <code>records.where(filter =&gt; value)</code>.</p>
+
+<p>Note: It is also possible to override the <code>self.apply_filter</code> method, though this approach is now deprecated:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">def</span> <span class="pl-en">self.apply_filter</span>(<span class="pl-smi">records</span>, <span class="pl-smi">filter</span>, <span class="pl-smi">value</span>, <span class="pl-smi">options</span>)
+  <span class="pl-k">case</span> filter
+    <span class="pl-k">when</span> <span class="pl-c1">:last_name</span>, <span class="pl-c1">:first_name</span>, <span class="pl-c1">:name</span>
+      <span class="pl-k">if</span> value.is_a?(<span class="pl-c1">Array</span>)
+        value.each <span class="pl-k">do </span>|<span class="pl-smi">val</span>|
+          records <span class="pl-k">=</span> records.where(_model_class.arel_table[filter].matches(val))
+        <span class="pl-k">end</span>
+        records
+      <span class="pl-k">else</span>
+        records.where(_model_class.arel_table[filter].matches(value))
+      <span class="pl-k">end</span>
+    <span class="pl-k">else</span>
+      <span class="pl-k">super</span>(records, filter, value)
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="verifying-filters" class="anchor" href="#verifying-filters" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Verifying Filters</h5>
+
+<p>Because filters typically come straight from the request, it's prudent to verify their values. To do so, provide a
+callable to the <code>verify</code> option. This callable will be passed the <code>value</code> and the <code>context</code>. Verify should return the
+verified value, which may be modified.</p>
+
+<div class="highlight highlight-source-ruby"><pre>  filter <span class="pl-c1">:ids</span>,
+    <span class="pl-c1">verify:</span> <span class="pl-k">-</span><span class="pl-k">&gt;</span>(values, context) {
+      verify_keys(values, context)
+      values
+    },
+    <span class="pl-c1">apply:</span> <span class="pl-k">-</span><span class="pl-k">&gt;</span>(records, value, _options) {
+      records.where(<span class="pl-s"><span class="pl-pds">'</span>id IN (?)<span class="pl-pds">'</span></span>, value)
+    }</pre></div>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># A more complex example, showing how to filter for any overlap between the</span>
+<span class="pl-c"># value array and the possible_ids, using both verify and apply callables.</span>
+
+  filter <span class="pl-c1">:possible_ids</span>,
+    <span class="pl-c1">verify:</span> <span class="pl-k">-</span><span class="pl-k">&gt;</span>(values, context) {
+      values.map {|<span class="pl-smi">value</span>| value.to_i}
+    },
+    <span class="pl-c1">apply:</span> <span class="pl-k">-</span><span class="pl-k">&gt;</span>(records, value, _options) {
+      records.where(<span class="pl-s"><span class="pl-pds">'</span>possible_ids &amp;&amp; ARRAY[?]<span class="pl-pds">'</span></span>, value)
+    }</pre></div>
+
+<h5>
+<a id="finders" class="anchor" href="#finders" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Finders</h5>
+
+<p>Basic finding by filters is supported by resources. This is implemented in the <code>find</code> and <code>find_by_key</code> finder methods.
+Currently this is implemented for <code>ActiveRecord</code> based resources. The finder methods rely on the <code>records</code> method to get
+an <code>ActiveRecord::Relation</code> relation. It is therefore possible to override <code>records</code> to affect the three find related
+methods.</p>
+
+<h6>
+<a id="customizing-base-records-for-finder-methods" class="anchor" href="#customizing-base-records-for-finder-methods" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Customizing base records for finder methods</h6>
+
+<p>If you need to change the base records on which <code>find</code> and <code>find_by_key</code> operate, you can override the <code>records</code> method
+on the resource class.</p>
+
+<p>For example to allow a user to only retrieve his own posts you can do the following:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:title</span>, <span class="pl-c1">:body</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">self.records</span>(<span class="pl-smi">options</span> <span class="pl-k">=</span> {})
+    context <span class="pl-k">=</span> options[<span class="pl-c1">:context</span>]
+    context[<span class="pl-c1">:current_user</span>].posts
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>When you create a relationship, a method is created to fetch record(s) for that relationship, using the relation name
+for the relationship.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  has_one <span class="pl-c1">:author</span>
+  has_many <span class="pl-c1">:comments</span>
+
+  <span class="pl-c"># def record_for_author</span>
+  <span class="pl-c">#   relationship = self.class._relationship(:author)</span>
+  <span class="pl-c">#   relation_name = relationship.relation_name(context: @context)</span>
+  <span class="pl-c">#   records_for(relation_name)</span>
+  <span class="pl-c"># end</span>
+
+  <span class="pl-c"># def records_for_comments</span>
+  <span class="pl-c">#   relationship = self.class._relationship(:comments)</span>
+  <span class="pl-c">#   relation_name = relationship.relation_name(context: @context)</span>
+  <span class="pl-c">#   records_for(relation_name)</span>
+  <span class="pl-c"># end</span>
+<span class="pl-k">end</span>
+</pre></div>
+
+<p>For example, you may want to raise an error if the user is not authorized to view the related records. See the next
+section for additional details on raising errors.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">BaseResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  <span class="pl-k">def</span> <span class="pl-en">records_for</span>(<span class="pl-smi">relation_name</span>)
+    context <span class="pl-k">=</span> options[<span class="pl-c1">:context</span>]
+    records <span class="pl-k">=</span> _model.public_send(relation_name)
+
+    <span class="pl-k">unless</span> context[<span class="pl-c1">:current_user</span>].can_view?(records)
+      <span class="pl-k">raise</span> <span class="pl-c1">NotAuthorizedError</span>
+    <span class="pl-k">end</span>
+
+    records
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h6>
+<a id="raising-errors" class="anchor" href="#raising-errors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Raising Errors</h6>
+
+<p>Inside the finder methods (like <code>records_for</code>) or inside of resource callbacks
+(like <code>before_save</code>) you can <code>raise</code> an error to halt processing. JSONAPI::Resources
+has some built in errors that will return appropriate error codes. By
+default any other error that you raise will return a <code>500</code> status code
+for a general internal server error.</p>
+
+<p>To return useful error codes that represent application errors you
+should set the <code>exception_class_whitelist</code> config variable, and then you
+should use the Rails <code>rescue_from</code> macro to render a status code.</p>
+
+<p>For example, this config setting allows the <code>NotAuthorizedError</code> to bubble up out of
+JSONAPI::Resources and into your application.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># config/initializer/jsonapi-resources.rb</span>
+<span class="pl-c1">JSONAPI</span>.configure <span class="pl-k">do </span>|<span class="pl-smi">config</span>|
+  config.exception_class_whitelist <span class="pl-k">=</span> [<span class="pl-c1">NotAuthorizedError</span>]
+<span class="pl-k">end</span></pre></div>
+
+<p>Handling the error and rendering the appropriate code is now the resonsiblity of the
+application and could be handled like this:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ApiController<span class="pl-e"> &lt; ApplicationController</span></span>
+  rescue_from <span class="pl-c1">NotAuthorizedError</span>, <span class="pl-c1">with:</span> <span class="pl-c1">:reject_forbidden_request</span>
+  <span class="pl-k">def</span> <span class="pl-en">reject_forbidden_request</span>
+    render <span class="pl-c1">json:</span> {<span class="pl-c1">error:</span> <span class="pl-s"><span class="pl-pds">'</span>Forbidden<span class="pl-pds">'</span></span>}, <span class="pl-c1">:status</span> =&gt; <span class="pl-c1">403</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h6>
+<a id="applying-filters-1" class="anchor" href="#applying-filters-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Applying Filters</h6>
+
+<p>The <code>apply_filter</code> method is called to apply each filter to the <code>Arel</code> relation. You may override this method to gain
+control over how the filters are applied to the <code>Arel</code> relation.</p>
+
+<p>This example shows how you can implement different approaches for different filters.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">def</span> <span class="pl-en">self.apply_filter</span>(<span class="pl-smi">records</span>, <span class="pl-smi">filter</span>, <span class="pl-smi">value</span>, <span class="pl-smi">options</span>)
+  <span class="pl-k">case</span> filter
+    <span class="pl-k">when</span> <span class="pl-c1">:visibility</span>
+      records.where(<span class="pl-s"><span class="pl-pds">'</span>users.publicly_visible = ?<span class="pl-pds">'</span></span>, value <span class="pl-k">==</span> <span class="pl-c1">:public</span>)
+    <span class="pl-k">when</span> <span class="pl-c1">:last_name</span>, <span class="pl-c1">:first_name</span>, <span class="pl-c1">:name</span>
+      <span class="pl-k">if</span> value.is_a?(<span class="pl-c1">Array</span>)
+        value.each <span class="pl-k">do </span>|<span class="pl-smi">val</span>|
+          records <span class="pl-k">=</span> records.where(_model_class.arel_table[filter].matches(val))
+        <span class="pl-k">end</span>
+        records
+      <span class="pl-k">else</span>
+        records.where(_model_class.arel_table[filter].matches(value))
+      <span class="pl-k">end</span>
+    <span class="pl-k">else</span>
+      <span class="pl-k">super</span>(records, filter, value)
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h6>
+<a id="applying-sorting" class="anchor" href="#applying-sorting" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Applying Sorting</h6>
+
+<p>You can override the <code>apply_sort</code> method to gain control over how the sorting is done. This may be useful in case you'd
+like to base the sorting on variables in your context.</p>
+
+<p>Example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">def</span> <span class="pl-en">self.apply_sort</span>(<span class="pl-smi">records</span>, <span class="pl-smi">order_options</span>, <span class="pl-smi">context</span> <span class="pl-k">=</span> {})
+  <span class="pl-k">if</span> order_options.has?(<span class="pl-c1">:trending</span>)
+    records <span class="pl-k">=</span> records.order_by_trending_scope
+    order_options <span class="pl-k">-</span> [<span class="pl-c1">:trending</span>]
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">super</span>(records, order_options, context)
+<span class="pl-k">end</span></pre></div>
+
+<h6>
+<a id="override-finder-methods" class="anchor" href="#override-finder-methods" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Override finder methods</h6>
+
+<p>Finally if you have more complex requirements for finding you can override the <code>find</code> and <code>find_by_key</code> methods on the
+resource class.</p>
+
+<p>Here's an example that defers the <code>find</code> operation to a <code>current_user</code> set on the <code>context</code> option:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">AuthorResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:name</span>
+  model_name <span class="pl-s"><span class="pl-pds">'</span>Person<span class="pl-pds">'</span></span>
+  has_many <span class="pl-c1">:posts</span>
+
+  filter <span class="pl-c1">:name</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">self.find</span>(<span class="pl-smi">filters</span>, <span class="pl-smi">options</span> <span class="pl-k">=</span> {})
+    context <span class="pl-k">=</span> options[<span class="pl-c1">:context</span>]
+    authors <span class="pl-k">=</span> context[<span class="pl-c1">:current_user</span>].find_authors(filters)
+
+    <span class="pl-k">return</span> authors.map <span class="pl-k">do </span>|<span class="pl-smi">author</span>|
+      <span class="pl-v">self</span>.<span class="pl-k">new</span>(author, context)
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="pagination" class="anchor" href="#pagination" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Pagination</h4>
+
+<p>Pagination is performed using a <code>paginator</code>, which is a class responsible for parsing the <code>page</code> request parameters and
+applying the pagination logic to the results.</p>
+
+<h5>
+<a id="paginators" class="anchor" href="#paginators" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Paginators</h5>
+
+<p><code>JSONAPI::Resource</code> supports several pagination methods by default, and allows you to implement a custom system if the
+defaults do not meet your needs.</p>
+
+<h6>
+<a id="paged-paginator" class="anchor" href="#paged-paginator" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Paged Paginator</h6>
+
+<p>The <code>paged</code> <code>paginator</code> returns results based on pages of a fixed size. Valid <code>page</code> parameters are <code>number</code> and <code>size</code>.
+If <code>number</code> is omitted the first page is returned. If <code>size</code> is omitted the <code>default_page_size</code> from the configuration
+settings is used.</p>
+
+<pre><code>GET /articles?page%5Bnumber%5D=10&amp;page%5Bsize%5D=10 HTTP/1.1
+Accept: application/vnd.api+json
+</code></pre>
+
+<h6>
+<a id="offset-paginator" class="anchor" href="#offset-paginator" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Offset Paginator</h6>
+
+<p>The <code>offset</code> <code>paginator</code> returns results based on an offset from the beginning of the resultset. Valid <code>page</code> parameters
+are <code>offset</code> and <code>limit</code>. If <code>offset</code> is omitted a value of 0 will be used. If <code>limit</code> is omitted the <code>default_page_size</code>
+from the configuration settings is used.</p>
+
+<pre><code>GET /articles?page%5Blimit%5D=10&amp;page%5Boffset%5D=10 HTTP/1.1
+Accept: application/vnd.api+json
+</code></pre>
+
+<h6>
+<a id="custom-paginators" class="anchor" href="#custom-paginators" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Custom Paginators</h6>
+
+<p>Custom <code>paginators</code> can be used. These should derive from <code>Paginator</code>. The <code>apply</code> method takes a <code>relation</code> and
+<code>order_options</code> and is expected to return a <code>relation</code>. The <code>initialize</code> method receives the parameters from the <code>page</code>
+request parameters. It is up to the paginator author to parse and validate these parameters.</p>
+
+<p>For example, here is a very simple single record at a time paginator:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">SingleRecordPaginator<span class="pl-e"> &lt; JSONAPI::Paginator</span></span>
+  <span class="pl-k">def</span> <span class="pl-en">initialize</span>(<span class="pl-smi">params</span>)
+    <span class="pl-c"># param parsing and validation here</span>
+    <span class="pl-smi">@page</span> <span class="pl-k">=</span> params.to_i
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">apply</span>(<span class="pl-smi">relation</span>, <span class="pl-smi">order_options</span>)
+    relation.offset(<span class="pl-smi">@page</span>).limit(<span class="pl-c1">1</span>)
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h5>
+<a id="paginator-configuration" class="anchor" href="#paginator-configuration" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Paginator Configuration</h5>
+
+<p>The default paginator, which will be used for all resources, is set using <code>JSONAPI.configure</code>. For example, in your
+<code>config/initializers/jsonapi_resources.rb</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">JSONAPI</span>.configure <span class="pl-k">do </span>|<span class="pl-smi">config</span>|
+  <span class="pl-c"># built in paginators are :none, :offset, :paged</span>
+  config.default_paginator <span class="pl-k">=</span> <span class="pl-c1">:offset</span>
+
+  config.default_page_size <span class="pl-k">=</span> <span class="pl-c1">10</span>
+  config.maximum_page_size <span class="pl-k">=</span> <span class="pl-c1">20</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>If no <code>default_paginator</code> is configured, pagination will be disabled by default.</p>
+
+<p>Paginators can also be set at the resource-level, which will override the default setting. This is done using the
+<code>paginator</code> method:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">BookResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:title</span>
+  attribute <span class="pl-c1">:isbn</span>
+
+  paginator <span class="pl-c1">:offset</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>To disable pagination in a resource, specify <code>:none</code> for <code>paginator</code>.</p>
+
+<h4>
+<a id="included-relationships-side-loading-resources" class="anchor" href="#included-relationships-side-loading-resources" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Included relationships (side-loading resources)</h4>
+
+<p>JR supports <a href="http://jsonapi.org/format/#fetching-includes">request include params</a> out of the box, for side loading related resources.</p>
+
+<p>Here's an example from the spec:</p>
+
+<pre><code>GET /articles/1?include=comments HTTP/1.1
+Accept: application/vnd.api+json
+</code></pre>
+
+<p>Will get you the following payload by default:</p>
+
+<pre><code>{
+  "data": {
+    "type": "articles",
+    "id": "1",
+    "attributes": {
+      "title": "JSON API paints my bikeshed!"
+    },
+    "links": {
+      "self": "http://example.com/articles/1"
+    },
+    "relationships": {
+      "comments": {
+        "links": {
+          "self": "http://example.com/articles/1/relationships/comments",
+          "related": "http://example.com/articles/1/comments"
+        },
+        "data": [
+          { "type": "comments", "id": "5" },
+          { "type": "comments", "id": "12" }
+        ]
+      }
+    }
+  },
+  "included": [{
+    "type": "comments",
+    "id": "5",
+    "attributes": {
+      "body": "First!"
+    },
+    "links": {
+      "self": "http://example.com/comments/5"
+    }
+  }, {
+    "type": "comments",
+    "id": "12",
+    "attributes": {
+      "body": "I like XML better"
+    },
+    "links": {
+      "self": "http://example.com/comments/12"
+    }
+  }]
+}
+</code></pre>
+
+<h4>
+<a id="resource-meta" class="anchor" href="#resource-meta" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Resource Meta</h4>
+
+<p>Meta information can be included for each resource using the meta method in the resource declaration. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">BookResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:title</span>
+  attribute <span class="pl-c1">:isbn</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">meta</span>(<span class="pl-smi">options</span>)
+    {
+      <span class="pl-c1">copyright:</span> <span class="pl-s"><span class="pl-pds">'</span>API Copyright 2015 - XYZ Corp.<span class="pl-pds">'</span></span>,
+      <span class="pl-c1">computed_copyright:</span> options[<span class="pl-c1">:serialization_options</span>][<span class="pl-c1">:copyright</span>],
+      <span class="pl-c1">last_updated_at:</span> _model.updated_at
+    }
+   <span class="pl-k">end</span>
+<span class="pl-k">end</span>
+</pre></div>
+
+<p>The <code>meta</code> method will be called for each resource instance. Override the <code>meta</code> method on a resource class to control
+the meta information for the resource. If a non empty hash is returned from <code>meta</code> this will be serialized. The <code>meta</code>
+method is called with an <code>options</code> hash. The <code>options</code> hash will contain the following:</p>
+
+<ul>
+<li>
+<code>:serializer</code> -&gt; the serializer instance</li>
+<li>
+<code>:serialization_options</code> -&gt; the contents of the <code>serialization_options</code> method on the controller.</li>
+</ul>
+
+<h4>
+<a id="custom-links" class="anchor" href="#custom-links" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Custom Links</h4>
+
+<p>Custom links can be included for each resource by overriding the <code>custom_links</code> method. If a non empty hash is returned from <code>custom_links</code>, it will be merged with the default links hash containing the resource's <code>self</code> link. The <code>custom_links</code> method is called with the same <code>options</code> hash used by for <a href="#resource-meta">resource meta information</a>. The <code>options</code> hash contains the following:</p>
+
+<ul>
+<li>
+<code>:serializer</code> -&gt; the serializer instance</li>
+<li>
+<code>:serialization_options</code> -&gt; the contents of the <code>serialization_options</code> method on the controller.</li>
+</ul>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">CityCouncilMeeting<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:title</span>, <span class="pl-c1">:location</span>, <span class="pl-c1">:approved</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">custom_links</span>(<span class="pl-smi">options</span>)
+    { <span class="pl-c1">minutes:</span> options[<span class="pl-c1">:serializer</span>].link_builder.self_link(<span class="pl-v">self</span>) <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">"</span>/minutes<span class="pl-pds">"</span></span> }
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>This will create a custom link with the key <code>minutes</code>, which will be merged with the default <code>self</code> link, like so:</p>
+
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>data<span class="pl-pds">"</span></span>: [
+    {
+      <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>cityCouncilMeetings<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://city.gov/api/city-council-meetings/1<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>minutes<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://city.gov/api/city-council-meetings/1/minutes<span class="pl-pds">"</span></span>
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>attributes<span class="pl-pds">"</span></span>: {<span class="pl-ii">...</span>}
+    },
+    <span class="pl-ii">//...</span>
+  ]
+}</pre></div>
+
+<p>Of course, the <code>custom_links</code> method can include logic to include links only when relevant:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">CityCouncilMeeting<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:title</span>, <span class="pl-c1">:location</span>, <span class="pl-c1">:approved</span>
+
+  delegate <span class="pl-c1">:approved?</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:model</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">custom_links</span>(<span class="pl-smi">options</span>)
+    extra_links <span class="pl-k">=</span> {}
+    <span class="pl-k">if</span> approved?
+      extra_links[<span class="pl-c1">:minutes</span>] <span class="pl-k">=</span> options[<span class="pl-c1">:serializer</span>].link_builder.self_link(<span class="pl-v">self</span>) <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">"</span>/minutes<span class="pl-pds">"</span></span>
+    <span class="pl-k">end</span>
+    extra_links
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>It's also possibly to suppress the default <code>self</code> link by returning a hash with <code>{self: nil}</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">Selfless<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  <span class="pl-k">def</span> <span class="pl-en">custom_links</span>(<span class="pl-smi">options</span>)
+    {<span class="pl-c1">self:</span> <span class="pl-c1">nil</span>}
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="callbacks" class="anchor" href="#callbacks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Callbacks</h4>
+
+<p><code>ActiveSupport::Callbacks</code> is used to provide callback functionality, so the behavior is very similar to what you may be
+used to from <code>ActiveRecord</code>.</p>
+
+<p>For example, you might use a callback to perform authorization on your resource before an action.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">BaseResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  before_create <span class="pl-c1">:authorize_create</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">authorize_create</span>
+    <span class="pl-c"># ...</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>The types of supported callbacks are:</p>
+
+<ul>
+<li><code>before</code></li>
+<li><code>after</code></li>
+<li><code>around</code></li>
+</ul>
+
+<h5>
+<a id="jsonapiresource-callbacks" class="anchor" href="#jsonapiresource-callbacks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>JSONAPI::Resource</code> Callbacks</h5>
+
+<p>Callbacks can be defined for the following <code>JSONAPI::Resource</code> events:</p>
+
+<ul>
+<li><code>:create</code></li>
+<li><code>:update</code></li>
+<li><code>:remove</code></li>
+<li><code>:save</code></li>
+<li><code>:create_to_many_link</code></li>
+<li><code>:replace_to_many_links</code></li>
+<li><code>:create_to_one_link</code></li>
+<li><code>:replace_to_one_link</code></li>
+<li><code>:remove_to_many_link</code></li>
+<li><code>:remove_to_one_link</code></li>
+<li><code>:replace_fields</code></li>
+</ul>
+
+<h6>
+<a id="relationship-reflection" class="anchor" href="#relationship-reflection" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Relationship Reflection</h6>
+
+<p>By default updates to relationships only invoke callbacks on the primary
+Resource. By setting the <code>use_relationship_reflection</code> <a href="#configuration">Configuration</a> option
+updates to <code>has_many</code> relationships will occur on the related resource, triggering
+callbacks on both resources.</p>
+
+<h5>
+<a id="jsonapiprocessor-callbacks" class="anchor" href="#jsonapiprocessor-callbacks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>JSONAPI::Processor</code> Callbacks</h5>
+
+<p>Callbacks can also be defined for <code>JSONAPI::Processor</code> events:</p>
+
+<ul>
+<li>
+<code>:operation</code>: Any individual operation.</li>
+<li>
+<code>:find</code>: A <code>find</code> operation is being processed.</li>
+<li>
+<code>:show</code>: A <code>show</code> operation is being processed.</li>
+<li>
+<code>:show_relationship</code>: A <code>show_relationship</code> operation is being processed.</li>
+<li>
+<code>:show_related_resource</code>: A <code>show_related_resource</code> operation is being processed.</li>
+<li>
+<code>:show_related_resources</code>: A <code>show_related_resources</code> operation is being processed.</li>
+<li>
+<code>:create_resource</code>: A <code>create_resource</code> operation is being processed.</li>
+<li>
+<code>:remove_resource</code>: A <code>remove_resource</code> operation is being processed.</li>
+<li>
+<code>:replace_fields</code>: A <code>replace_fields</code> operation is being processed.</li>
+<li>
+<code>:replace_to_one_relationship</code>: A <code>replace_to_one_relationship</code> operation is being processed.</li>
+<li>
+<code>:create_to_many_relationship</code>: A <code>create_to_many_relationship</code> operation is being processed.</li>
+<li>
+<code>:replace_to_many_relationship</code>: A <code>replace_to_many_relationship</code> operation is being processed.</li>
+<li>
+<code>:remove_to_many_relationship</code>: A <code>remove_to_many_relationship</code> operation is being processed.</li>
+<li>
+<code>:remove_to_one_relationship</code>: A <code>remove_to_one_relationship</code> operation is being processed.</li>
+</ul>
+
+<p>See <a href="#operation-processors">Operation Processors</a> for details on using OperationProcessors</p>
+
+<h5>
+<a id="jsonapioperationsprocessor-callbacks-a-removed-feature" class="anchor" href="#jsonapioperationsprocessor-callbacks-a-removed-feature" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>JSONAPI::OperationsProcessor</code> Callbacks (a removed feature)</h5>
+
+<p>Note: The <code>JSONAPI::OperationsProcessor</code> has been removed and replaced with the <code>JSONAPI::OperationDispatcher</code>
+and <code>Processor</code> classes per resource. The callbacks have been renamed and moved to the
+<code>Processor</code>s, with the exception of the <code>operations</code> callback which is now on the controller.</p>
+
+<h3>
+<a id="controllers" class="anchor" href="#controllers" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Controllers</h3>
+
+<p>There are two ways to implement a controller for your resources. Either derive from <code>ResourceController</code> or import
+the <code>ActsAsResourceController</code> module.</p>
+
+<h5>
+<a id="resourcecontroller" class="anchor" href="#resourcecontroller" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>ResourceController</h5>
+
+<p><code>JSONAPI::Resources</code> provides a class, <code>ResourceController</code>, that can be used as the base class for your controllers.
+<code>ResourceController</code> supports <code>index</code>, <code>show</code>, <code>create</code>, <code>update</code>, and <code>destroy</code> methods. Just deriving your controller
+from <code>ResourceController</code> will give you a fully functional controller.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PeopleController<span class="pl-e"> &lt; JSONAPI::ResourceController</span></span>
+
+<span class="pl-k">end</span></pre></div>
+
+<p>Of course you are free to extend this as needed and override action handlers or other methods.</p>
+
+<p>A jsonapi-controller generator is avaliable</p>
+
+<pre><code>rails generate jsonapi:controller contact
+</code></pre>
+
+<h6>
+<a id="resourcecontrollermetal" class="anchor" href="#resourcecontrollermetal" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>ResourceControllerMetal</h6>
+
+<p><code>JSONAPI::Resources</code> also provides an alternative class to <code>ResourceController</code> called <code>ResourceControllerMetal</code>.
+In order to provide a lighter weight controller option this strips the controller down to just the classes needed
+to work with <code>JSONAPI::Resources</code>.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PeopleController<span class="pl-e"> &lt; JSONAPI::ResourceControllerMetal</span></span>
+
+<span class="pl-k">end</span></pre></div>
+
+<p>Note: This may not provide all of the expected controller capabilities if you are using additional gems such as DoorKeeper.</p>
+
+<h6>
+<a id="serialization-options" class="anchor" href="#serialization-options" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Serialization Options</h6>
+
+<p>Additional options can be passed to the serializer using the <code>serialization_options</code> method.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">ApplicationController<span class="pl-e"> &lt; JSONAPI::ResourceController</span></span>
+  <span class="pl-k">def</span> <span class="pl-en">serialization_options</span>
+    {<span class="pl-c1">copyright:</span> <span class="pl-s"><span class="pl-pds">'</span>Copyright 2015<span class="pl-pds">'</span></span>}
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>These <code>serialization_options</code> are passed to the <code>meta</code> method used to generate resource <code>meta</code> values.</p>
+
+<h5>
+<a id="actsasresourcecontroller" class="anchor" href="#actsasresourcecontroller" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>ActsAsResourceController</h5>
+
+<p><code>JSONAPI::Resources</code> also provides a module, <code>JSONAPI::ActsAsResourceController</code>. You can include this module to
+mix in all the features of <code>ResourceController</code> into your existing controller class.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostsController<span class="pl-e"> &lt; ActionController::Base</span></span>
+  <span class="pl-k">include</span> <span class="pl-c1">JSONAPI</span>::<span class="pl-c1">ActsAsResourceController</span>
+<span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="namespaces" class="anchor" href="#namespaces" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Namespaces</h4>
+
+<p>JSONAPI::Resources supports namespacing of controllers and resources. With namespacing you can version your API.</p>
+
+<p>If you namespace your controller it will require a namespaced resource.</p>
+
+<p>In the following example we have a <code>resource</code> that isn't namespaced, and one that has now been namespaced. There are
+slight differences between the two resources, as might be seen in a new version of an API:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attribute <span class="pl-c1">:title</span>
+  attribute <span class="pl-c1">:body</span>
+  attribute <span class="pl-c1">:subject</span>
+
+  has_one <span class="pl-c1">:author</span>, <span class="pl-c1">class_name:</span> <span class="pl-s"><span class="pl-pds">'</span>Person<span class="pl-pds">'</span></span>
+  has_one <span class="pl-c1">:section</span>
+  has_many <span class="pl-c1">:tags</span>, <span class="pl-c1">acts_as_set:</span> <span class="pl-c1">true</span>
+  has_many <span class="pl-c1">:comments</span>, <span class="pl-c1">acts_as_set:</span> <span class="pl-c1">false</span>
+  <span class="pl-k">def</span> <span class="pl-en">subject</span>
+    <span class="pl-smi">@model</span>.title
+  <span class="pl-k">end</span>
+
+  filters <span class="pl-c1">:title</span>, <span class="pl-c1">:author</span>, <span class="pl-c1">:tags</span>, <span class="pl-c1">:comments</span>
+  filter <span class="pl-c1">:id</span>
+<span class="pl-k">end</span>
+
+...
+
+<span class="pl-k">module</span> <span class="pl-en">Api</span>
+  <span class="pl-k">module</span> <span class="pl-en">V1</span>
+    <span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+      <span class="pl-c"># V1 replaces the non-namespaced resource</span>
+      <span class="pl-c"># V1 no longer supports tags and now calls author 'writer'</span>
+      attribute <span class="pl-c1">:title</span>
+      attribute <span class="pl-c1">:body</span>
+      attribute <span class="pl-c1">:subject</span>
+
+      has_one <span class="pl-c1">:writer</span>, <span class="pl-c1">foreign_key:</span> <span class="pl-s"><span class="pl-pds">'</span>author_id<span class="pl-pds">'</span></span>
+      has_one <span class="pl-c1">:section</span>
+      has_many <span class="pl-c1">:comments</span>, <span class="pl-c1">acts_as_set:</span> <span class="pl-c1">false</span>
+
+      <span class="pl-k">def</span> <span class="pl-en">subject</span>
+        <span class="pl-smi">@model</span>.title
+      <span class="pl-k">end</span>
+
+      filters <span class="pl-c1">:writer</span>
+    <span class="pl-k">end</span>
+
+    <span class="pl-k">class</span> <span class="pl-en">WriterResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+      attributes <span class="pl-c1">:name</span>, <span class="pl-c1">:email</span>
+      model_name <span class="pl-s"><span class="pl-pds">'</span>Person<span class="pl-pds">'</span></span>
+      has_many <span class="pl-c1">:posts</span>
+
+      filter <span class="pl-c1">:name</span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>The following controllers are used:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostsController<span class="pl-e"> &lt; JSONAPI::ResourceController</span></span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">module</span> <span class="pl-en">Api</span>
+  <span class="pl-k">module</span> <span class="pl-en">V1</span>
+    <span class="pl-k">class</span> <span class="pl-en">PostsController<span class="pl-e"> &lt; JSONAPI::ResourceController</span></span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>You will also need to namespace your routes:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">Rails</span>.application.routes.draw <span class="pl-k">do</span>
+
+  jsonapi_resources <span class="pl-c1">:posts</span>
+
+  namespace <span class="pl-c1">:api</span> <span class="pl-k">do</span>
+    namespace <span class="pl-c1">:v1</span> <span class="pl-k">do</span>
+      jsonapi_resources <span class="pl-c1">:posts</span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>When a namespaced <code>resource</code> is used, any related <code>resources</code> must also be in the same namespace.</p>
+
+<h4>
+<a id="error-codes" class="anchor" href="#error-codes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Error codes</h4>
+
+<p>Error codes are provided for each error object returned, based on the error. These errors are:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">module</span> <span class="pl-en">JSONAPI</span>
+  <span class="pl-c1">VALIDATION_ERROR</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>100<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_RESOURCE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>101<span class="pl-pds">'</span></span>
+  <span class="pl-c1">FILTER_NOT_ALLOWED</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>102<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_FIELD_VALUE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>103<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_FIELD</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>104<span class="pl-pds">'</span></span>
+  <span class="pl-c1">PARAM_NOT_ALLOWED</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>105<span class="pl-pds">'</span></span>
+  <span class="pl-c1">PARAM_MISSING</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>106<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_FILTER_VALUE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>107<span class="pl-pds">'</span></span>
+  <span class="pl-c1">COUNT_MISMATCH</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>108<span class="pl-pds">'</span></span>
+  <span class="pl-c1">KEY_ORDER_MISMATCH</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>109<span class="pl-pds">'</span></span>
+  <span class="pl-c1">KEY_NOT_INCLUDED_IN_URL</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>110<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_INCLUDE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>112<span class="pl-pds">'</span></span>
+  <span class="pl-c1">RELATION_EXISTS</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>113<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_SORT_CRITERIA</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>114<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_LINKS_OBJECT</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>115<span class="pl-pds">'</span></span>
+  <span class="pl-c1">TYPE_MISMATCH</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>116<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_PAGE_OBJECT</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>117<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_PAGE_VALUE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>118<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_FIELD_FORMAT</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>119<span class="pl-pds">'</span></span>
+  <span class="pl-c1">INVALID_FILTERS_SYNTAX</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>120<span class="pl-pds">'</span></span>
+  <span class="pl-c1">SAVE_FAILED</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>121<span class="pl-pds">'</span></span>
+  <span class="pl-c1">FORBIDDEN</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>403<span class="pl-pds">'</span></span>
+  <span class="pl-c1">RECORD_NOT_FOUND</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>404<span class="pl-pds">'</span></span>
+  <span class="pl-c1">NOT_ACCEPTABLE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>406<span class="pl-pds">'</span></span>
+  <span class="pl-c1">UNSUPPORTED_MEDIA_TYPE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>415<span class="pl-pds">'</span></span>
+  <span class="pl-c1">LOCKED</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>423<span class="pl-pds">'</span></span>
+<span class="pl-k">end</span></pre></div>
+
+<p>These codes can be customized in your app by creating an initializer to override any or all of the codes.</p>
+
+<p>In addition textual error codes can be returned by setting the configuration option <code>use_text_errors = true</code>. For
+example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">JSONAPI</span>.configure <span class="pl-k">do </span>|<span class="pl-smi">config</span>|
+  config.use_text_errors <span class="pl-k">=</span> <span class="pl-c1">true</span>
+<span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="handling-exceptions" class="anchor" href="#handling-exceptions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Handling Exceptions</h4>
+
+<p>By default, all exceptions raised downstream from a resource controller will be caught, logged, and a <code>500 Internal Server Error</code> will be rendered. Exceptions can be whitelisted in the config to pass through the handler and be caught manually, or you can pass a callback from a resource controller to insert logic into the rescue block without interrupting the control flow. This can be particularly useful for additional logging or monitoring without the added work of rendering responses.</p>
+
+<p>Pass a block, refer to controller class methods, or both. Note that methods must be defined as class methods on a controller and accept one parameter, which is passed the exception object that was rescued.</p>
+
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">class</span> <span class="pl-en">ApplicationController<span class="pl-e"> &lt; JSONAPI::ResourceController</span></span>
+
+    on_server_error <span class="pl-c1">:first_callback</span>
+
+    <span class="pl-c">#or</span>
+
+    <span class="pl-c"># on_server_error do |error|</span>
+      <span class="pl-c">#do things</span>
+    <span class="pl-c">#end</span>
+
+    <span class="pl-k">def</span> <span class="pl-en">self.first_callback</span>(<span class="pl-smi">error</span>)
+      <span class="pl-c">#env["airbrake.error_id"] = notify_airbrake(error)</span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+</pre></div>
+
+<h4>
+<a id="action-callbacks" class="anchor" href="#action-callbacks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Action Callbacks</h4>
+
+<h5>
+<a id="verify_content_type_header" class="anchor" href="#verify_content_type_header" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>verify_content_type_header</h5>
+
+<p>By default, when controllers extend functionalities from <code>jsonapi-resources</code>, the <code>ActsAsResourceController#verify_content_type_header</code>
+method will be triggered before <code>create</code>, <code>update</code>, <code>create_relationship</code> and <code>update_relationship</code> actions. This method is reponsible
+for checking if client's request corresponds to the correct media type required by <a href="http://jsonapi.org/format/#content-negotiation-clients">JSON API</a>: <code>application/vnd.api+json</code>.</p>
+
+<p>In case you need to check the media type for custom actions, just make sure to call the method in your controller's <code>before_action</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">UsersController<span class="pl-e"> &lt; JSONAPI::ResourceController</span></span>
+  before_action <span class="pl-c1">:verify_content_type_header</span>, <span class="pl-c1">only:</span> [<span class="pl-c1">:auth</span>]
+
+  <span class="pl-k">def</span> <span class="pl-en">auth</span>
+    <span class="pl-c"># some crazy auth code goes here</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h3>
+<a id="operation-processors" class="anchor" href="#operation-processors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Operation Processors</h3>
+
+<p>Operation Processors are called to perform the operation(s) that make up a request. The controller (through the <code>OperationDispatcher</code>), creates an <code>OperatorProcessor</code> to handle each operation. The processor is created based on the resource name, including the namespace. If a processor does not exist for a resource (namespace matters) the default operation processor is used instead. The default processor can be changed by a configuration setting.</p>
+
+<p>Defining a custom <code>Processor</code> allows for custom callback handling of each operation type for each resource type. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">Api::V4::BookProcessor<span class="pl-e"> &lt; JSONAPI::Processor</span></span>
+  after_find <span class="pl-k">do</span>
+    <span class="pl-k">unless</span> <span class="pl-smi">@result</span>.is_a?(<span class="pl-c1">JSONAPI</span>::<span class="pl-c1">ErrorsOperationResult</span>)
+      <span class="pl-smi">@result</span>.meta[<span class="pl-c1">:total_records_found</span>] <span class="pl-k">=</span> <span class="pl-smi">@result</span>.record_count
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>This simple example uses a callback to update the result's meta property with the total count of records (a redundant
+feature only for example purposes), if there wasn't an error in the operation.  It is also possible to override the
+<code>find</code> method as well if a different behavior is needed, for example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">Api::V4::BookProcessor<span class="pl-e"> &lt; JSONAPI::Processor</span></span>
+  <span class="pl-k">def</span> <span class="pl-en">find</span>
+    filters <span class="pl-k">=</span> params[<span class="pl-c1">:filters</span>]
+    include_directives <span class="pl-k">=</span> params[<span class="pl-c1">:include_directives</span>]
+    sort_criteria <span class="pl-k">=</span> params.fetch(<span class="pl-c1">:sort_criteria</span>, [])
+    paginator <span class="pl-k">=</span> params[<span class="pl-c1">:paginator</span>]
+
+    verified_filters <span class="pl-k">=</span> resource_klass.verify_filters(filters, context)
+    resource_records <span class="pl-k">=</span> resource_klass.find(verified_filters,
+                                           <span class="pl-c1">context:</span> context,
+                                           <span class="pl-c1">include_directives:</span> include_directives,
+                                           <span class="pl-c1">sort_criteria:</span> sort_criteria,
+                                           <span class="pl-c1">paginator:</span> paginator)
+
+    page_options <span class="pl-k">=</span> {}
+    <span class="pl-c"># Overriding the default record count logic to always include it in the meta</span>
+    <span class="pl-c">#if (JSONAPI.configuration.top_level_meta_include_record_count ||</span>
+    <span class="pl-c">#  (paginator &amp;&amp; paginator.class.requires_record_count))</span>
+      page_options[<span class="pl-c1">:record_count</span>] <span class="pl-k">=</span> resource_klass.find_count(verified_filters,
+                                                              <span class="pl-c1">context:</span> context,
+                                                              <span class="pl-c1">include_directives:</span> include_directives)
+    <span class="pl-c">#end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>Note: The authors of this gem expect the most common uses cases to be handled using the callbacks. It is likely that the
+internal functionality of the operation processing methods will change, at least for several revisions. Effort will be
+made to call this out in release notes. You have been warned.</p>
+
+<h3>
+<a id="serializer" class="anchor" href="#serializer" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Serializer</h3>
+
+<p>The <code>ResourceSerializer</code> can be used to serialize a resource into JSON API compliant JSON. <code>ResourceSerializer</code> must be
+ initialized with the primary resource type it will be serializing. <code>ResourceSerializer</code> has a <code>serialize_to_hash</code>
+ method that takes a resource instance or array of resource instances to serialize. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre>post <span class="pl-k">=</span> <span class="pl-c1">Post</span>.find(<span class="pl-c1">1</span>)
+<span class="pl-c1">JSONAPI</span>::<span class="pl-c1">ResourceSerializer</span>.<span class="pl-k">new</span>(<span class="pl-c1">PostResource</span>).serialize_to_hash(<span class="pl-c1">PostResource</span>.<span class="pl-k">new</span>(post, <span class="pl-c1">nil</span>))</pre></div>
+
+<p>Note: If your resource needs to access to state from a context hash, make sure to pass the context hash as the second argument of
+the resource class new method. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre>post <span class="pl-k">=</span> <span class="pl-c1">Post</span>.find(<span class="pl-c1">1</span>)
+context <span class="pl-k">=</span> { <span class="pl-c1">current_user:</span> current_user }
+<span class="pl-c1">JSONAPI</span>::<span class="pl-c1">ResourceSerializer</span>.<span class="pl-k">new</span>(<span class="pl-c1">PostResource</span>).serialize_to_hash(<span class="pl-c1">PostResource</span>.<span class="pl-k">new</span>(post, context))</pre></div>
+
+<p>This returns results like this:</p>
+
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>data<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>posts<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1<span class="pl-pds">"</span></span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>attributes<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>title<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>New post<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>body<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>A body!!!<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>subject<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>New post<span class="pl-pds">"</span></span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>relationships<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>section<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1/relationships/section<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>related<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1/section<span class="pl-pds">"</span></span>
+        },
+        <span class="pl-s"><span class="pl-pds">"</span>data<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>author<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1/relationships/author<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>related<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1/author<span class="pl-pds">"</span></span>
+        },
+        <span class="pl-s"><span class="pl-pds">"</span>data<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>people<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>
+        }
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>tags<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1/relationships/tags<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>related<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1/tags<span class="pl-pds">"</span></span>
+        }
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>comments<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1/relationships/comments<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>related<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://example.com/posts/1/comments<span class="pl-pds">"</span></span>
+        }
+      }
+    }
+  }
+}</pre></div>
+
+<h4>
+<a id="serializer-options" class="anchor" href="#serializer-options" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Serializer options</h4>
+
+<p>The <code>ResourceSerializer</code> can be initialized with some optional parameters:</p>
+
+<h5>
+<a id="include" class="anchor" href="#include" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>include</code>
+</h5>
+
+<p>An array of resources. Nested resources can be specified with dot notation.</p>
+
+<p><em>Purpose</em>: determines which objects will be side loaded with the source objects in an <code>included</code> section</p>
+
+<p><em>Example</em>: <code>include: ['comments','author','comments.tags','author.posts']</code></p>
+
+<h5>
+<a id="fields" class="anchor" href="#fields" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>fields</code>
+</h5>
+
+<p>A hash of resource types and arrays of fields for each resource type.</p>
+
+<p><em>Purpose</em>: determines which fields are serialized for a resource type. This encompasses both attributes and
+  relationship ids in the links section for a resource. Fields are global for a resource type.</p>
+
+<p><em>Example</em>: <code>fields: { people: [:email, :comments], posts: [:title, :author], comments: [:body, :post]}</code></p>
+
+<div class="highlight highlight-source-ruby"><pre>post <span class="pl-k">=</span> <span class="pl-c1">Post</span>.find(<span class="pl-c1">1</span>)
+include_resources <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">'</span>comments<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>author<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>comments.tags<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>author.posts<span class="pl-pds">'</span></span>]
+
+<span class="pl-c1">JSONAPI</span>::<span class="pl-c1">ResourceSerializer</span>.<span class="pl-k">new</span>(<span class="pl-c1">PostResource</span>, <span class="pl-c1">include:</span> include_resources,
+  <span class="pl-c1">fields:</span> {
+    <span class="pl-c1">people:</span> [<span class="pl-c1">:email</span>, <span class="pl-c1">:comments</span>],
+    <span class="pl-c1">posts:</span> [<span class="pl-c1">:title</span>, <span class="pl-c1">:author</span>],
+    <span class="pl-c1">tags:</span> [<span class="pl-c1">:name</span>],
+    <span class="pl-c1">comments:</span> [<span class="pl-c1">:body</span>, <span class="pl-c1">:post</span>]
+  }
+).serialize_to_hash(<span class="pl-c1">PostResource</span>.<span class="pl-k">new</span>(post, <span class="pl-c1">nil</span>))</pre></div>
+
+<h4>
+<a id="formatting" class="anchor" href="#formatting" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Formatting</h4>
+
+<p>JR by default uses some simple rules to format (and unformat) an attribute for (de-)serialization. Strings and Integers are output to JSON
+as is, and all other values have <code>.to_s</code> applied to them. This outputs something in all cases, but it is certainly not
+correct for every situation.</p>
+
+<p>If you want to change the way an attribute is (de-)serialized you have a couple of ways. The simplest method is to create a
+getter (and setter) method on the resource which overrides the attribute and apply the (un-)formatting there. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PersonResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name</span>, <span class="pl-c1">:email</span>, <span class="pl-c1">:last_login_time</span>
+
+  <span class="pl-c"># Setter example</span>
+  <span class="pl-k">def</span> <span class="pl-en">email=</span>(<span class="pl-smi">new_email</span>)
+    <span class="pl-smi">@model</span>.email <span class="pl-k">=</span> new_email.downcase
+  <span class="pl-k">end</span>
+
+  <span class="pl-c"># Getter example</span>
+  <span class="pl-k">def</span> <span class="pl-en">last_login_time</span>
+    <span class="pl-smi">@model</span>.last_login_time.in_time_zone(<span class="pl-smi">@context</span>[<span class="pl-c1">:current_user</span>].time_zone).to_s
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>This is simple to implement for a one off situation, but not for example if you want to apply the same formatting rules
+to all DateTime fields in your system. Another issue is the attribute on the resource will always return a formatted
+response, whether you want it or not.</p>
+
+<h5>
+<a id="value-formatters" class="anchor" href="#value-formatters" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Value Formatters</h5>
+
+<p>To overcome the above limitations JR uses Value Formatters. Value Formatters allow you to control the way values are
+handled for an attribute. The <code>format</code> can be set per attribute as it is declared in the resource. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PersonResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  attributes <span class="pl-c1">:name</span>, <span class="pl-c1">:email</span>, <span class="pl-c1">:spoken_languages</span>
+  attribute <span class="pl-c1">:last_login_time</span>, <span class="pl-c1">format:</span> <span class="pl-c1">:date_with_utc_timezone</span>
+
+  <span class="pl-c"># Getter/Setter for spoken_languages ...</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>A Value formatter has a <code>format</code> and an <code>unformat</code> method. Here's the base ValueFormatter and DefaultValueFormatter for
+reference:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">module</span> <span class="pl-en">JSONAPI</span>
+  <span class="pl-k">class</span> <span class="pl-en">ValueFormatter<span class="pl-e"> &lt; Formatter</span></span>
+    <span class="pl-k">class</span> <span class="pl-en"><span class="pl-smi">&lt;&lt; self</span></span>
+      <span class="pl-k">def</span> <span class="pl-en">format</span>(<span class="pl-smi">raw_value</span>)
+        <span class="pl-k">super</span>(raw_value)
+      <span class="pl-k">end</span>
+
+      <span class="pl-k">def</span> <span class="pl-en">unformat</span>(<span class="pl-smi">value</span>)
+        <span class="pl-k">super</span>(value)
+      <span class="pl-k">end</span>
+      ...
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span>
+
+<span class="pl-k">class</span> <span class="pl-en">DefaultValueFormatter<span class="pl-e"> &lt; JSONAPI::ValueFormatter</span></span>
+  <span class="pl-k">class</span> <span class="pl-en"><span class="pl-smi">&lt;&lt; self</span></span>
+    <span class="pl-k">def</span> <span class="pl-en">format</span>(<span class="pl-smi">raw_value</span>)
+      <span class="pl-k">case</span> raw_value
+        <span class="pl-k">when</span> <span class="pl-c1">Date</span>, <span class="pl-c1">Time</span>, <span class="pl-c1">DateTime</span>, <span class="pl-c1">ActiveSupport</span>::<span class="pl-c1">TimeWithZone</span>, <span class="pl-c1">BigDecimal</span>
+          <span class="pl-c"># Use the as_json methods added to various base classes by ActiveSupport</span>
+          <span class="pl-k">return</span> raw_value.as_json
+        <span class="pl-k">else</span>
+          <span class="pl-k">return</span> raw_value
+      <span class="pl-k">end</span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>You can also create your own Value Formatter. Value Formatters must be named with the <code>format</code> name followed by
+<code>ValueFormatter</code>, i.e. <code>DateWithUTCTimezoneValueFormatter</code> and derive from <code>JSONAPI::ValueFormatter</code>. It is
+recommended that you create a directory for your formatters, called <code>formatters</code>.</p>
+
+<p>The <code>format</code> method is called by the <code>ResourceSerializer</code> as is serializing a resource. The format method takes the
+<code>raw_value</code> parameter. <code>raw_value</code> is the value as read from the model.</p>
+
+<p>The <code>unformat</code> method is called when processing the request. Each incoming attribute (except <code>links</code>) are run through
+the <code>unformat</code> method. The <code>unformat</code> method takes a <code>value</code>, which is the value as it comes in on the
+request. This allows you process the incoming value to alter its state before it is stored in the model.</p>
+
+<h6>
+<a id="use-a-different-default-value-formatter" class="anchor" href="#use-a-different-default-value-formatter" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Use a Different Default Value Formatter</h6>
+
+<p>Another way to handle formatting is to set a different default value formatter. This will affect all attributes that do
+not have a <code>format</code> set. You can do this by overriding the <code>default_attribute_options</code> method for a resource (or a base
+resource for a system wide change).</p>
+
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">def</span> <span class="pl-en">self.default_attribute_options</span>
+    {<span class="pl-c1">format:</span> <span class="pl-c1">:my_default</span>}
+  <span class="pl-k">end</span></pre></div>
+
+<p>and</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">MyDefaultValueFormatter<span class="pl-e"> &lt; DefaultValueFormatter</span></span>
+  <span class="pl-k">class</span> <span class="pl-en"><span class="pl-smi">&lt;&lt; self</span></span>
+    <span class="pl-k">def</span> <span class="pl-en">format</span>(<span class="pl-smi">raw_value</span>)
+      <span class="pl-k">case</span> raw_value
+        <span class="pl-k">when</span> <span class="pl-c1">DateTime</span>
+          <span class="pl-k">return</span> <span class="pl-k">super</span>(raw_value.in_time_zone(<span class="pl-s"><span class="pl-pds">'</span>UTC<span class="pl-pds">'</span></span>))
+        <span class="pl-k">else</span>
+          <span class="pl-k">return</span> <span class="pl-k">super</span>
+      <span class="pl-k">end</span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>This way all DateTime values will be formatted to display in the UTC timezone.</p>
+
+<h4>
+<a id="key-format" class="anchor" href="#key-format" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Key Format</h4>
+
+<p>By default JR uses dasherized keys as per the
+<a href="http://jsonapi.org/recommendations/#naming">JSON API naming recommendations</a>.  This can be changed by specifying a
+different key formatter.</p>
+
+<p>For example, to use camel cased keys with an initial lowercase character (JSON's default) create an initializer and add
+the following:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">JSONAPI</span>.configure <span class="pl-k">do </span>|<span class="pl-smi">config</span>|
+  <span class="pl-c"># built in key format options are :underscored_key, :camelized_key and :dasherized_key</span>
+  config.json_key_format <span class="pl-k">=</span> <span class="pl-c1">:camelized_key</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>This will cause the serializer to use the <code>CamelizedKeyFormatter</code>. You can also create your own <code>KeyFormatter</code>, for
+example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">UpperCamelizedKeyFormatter<span class="pl-e"> &lt; JSONAPI::KeyFormatter</span></span>
+  <span class="pl-k">class</span> <span class="pl-en"><span class="pl-smi">&lt;&lt; self</span></span>
+    <span class="pl-k">def</span> <span class="pl-en">format</span>(<span class="pl-smi">key</span>)
+      <span class="pl-k">super</span>.camelize(<span class="pl-c1">:upper</span>)
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>You would specify this in <code>JSONAPI.configure</code> as <code>:upper_camelized</code>.</p>
+
+<h3>
+<a id="routing" class="anchor" href="#routing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Routing</h3>
+
+<p>JR has a couple of helper methods available to assist you with setting up routes.</p>
+
+<h5>
+<a id="jsonapi_resources" class="anchor" href="#jsonapi_resources" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>jsonapi_resources</code>
+</h5>
+
+<p>Like <code>resources</code> in <code>ActionDispatch</code>, <code>jsonapi_resources</code> provides resourceful routes mapping between HTTP verbs and URLs
+and controller actions. This will also setup mappings for relationship URLs for a resource's relationships. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">Rails</span>.application.routes.draw <span class="pl-k">do</span>
+  jsonapi_resources <span class="pl-c1">:contacts</span>
+  jsonapi_resources <span class="pl-c1">:phone_numbers</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>gives the following routes</p>
+
+<pre><code>                     Prefix Verb      URI Pattern                                               Controller#Action
+contact_relationships_phone_numbers GET       /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_relationship {:relationship=&gt;"phone_numbers"}
+                            POST      /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_relationship {:relationship=&gt;"phone_numbers"}
+                            DELETE    /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_relationship {:relationship=&gt;"phone_numbers"}
+      contact_phone_numbers GET       /contacts/:contact_id/phone-numbers(.:format)             phone_numbers#get_related_resources {:relationship=&gt;"phone_numbers", :source=&gt;"contacts"}
+                   contacts GET       /contacts(.:format)                                       contacts#index
+                            POST      /contacts(.:format)                                       contacts#create
+                    contact GET       /contacts/:id(.:format)                                   contacts#show
+                            PATCH     /contacts/:id(.:format)                                   contacts#update
+                            PUT       /contacts/:id(.:format)                                   contacts#update
+                            DELETE    /contacts/:id(.:format)                                   contacts#destroy
+ phone_number_relationships_contact GET       /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#show_relationship {:relationship=&gt;"contact"}
+                            PUT|PATCH /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#update_relationship {:relationship=&gt;"contact"}
+                            DELETE    /phone-numbers/:phone_number_id/relationships/contact(.:format)   phone_numbers#destroy_relationship {:relationship=&gt;"contact"}
+       phone_number_contact GET       /phone-numbers/:phone_number_id/contact(.:format)         contacts#get_related_resource {:relationship=&gt;"contact", :source=&gt;"phone_numbers"}
+              phone_numbers GET       /phone-numbers(.:format)                                  phone_numbers#index
+                            POST      /phone-numbers(.:format)                                  phone_numbers#create
+               phone_number GET       /phone-numbers/:id(.:format)                              phone_numbers#show
+                            PATCH     /phone-numbers/:id(.:format)                              phone_numbers#update
+                            PUT       /phone-numbers/:id(.:format)                              phone_numbers#update
+                            DELETE    /phone-numbers/:id(.:format)                              phone_numbers#destroy
+</code></pre>
+
+<h5>
+<a id="jsonapi_resource" class="anchor" href="#jsonapi_resource" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>jsonapi_resource</code>
+</h5>
+
+<p>Like <code>jsonapi_resources</code>, but for resources you lookup without an id.</p>
+
+<h4>
+<a id="nested-routes" class="anchor" href="#nested-routes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Nested Routes</h4>
+
+<p>By default nested routes are created for getting related resources and manipulating relationships. You can control the
+nested routes by passing a block into <code>jsonapi_resources</code> or <code>jsonapi_resource</code>. An empty block will not create
+any nested routes. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">Rails</span>.application.routes.draw <span class="pl-k">do</span>
+  jsonapi_resources <span class="pl-c1">:contacts</span> <span class="pl-k">do</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>gives routes that are only related to the primary resource, and none for its relationships:</p>
+
+<pre><code>      Prefix Verb   URI Pattern                  Controller#Action
+    contacts GET    /contacts(.:format)          contacts#index
+             POST   /contacts(.:format)          contacts#create
+     contact GET    /contacts/:id(.:format)      contacts#show
+             PATCH  /contacts/:id(.:format)      contacts#update
+             PUT    /contacts/:id(.:format)      contacts#update
+             DELETE /contacts/:id(.:format)      contacts#destroy
+</code></pre>
+
+<p>To manually add in the nested routes you can use the <code>jsonapi_links</code>, <code>jsonapi_related_resources</code> and
+<code>jsonapi_related_resource</code> inside the block. Or, you can add the default set of nested routes using the
+<code>jsonapi_relationships</code> method. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">Rails</span>.application.routes.draw <span class="pl-k">do</span>
+  jsonapi_resources <span class="pl-c1">:contacts</span> <span class="pl-k">do</span>
+    jsonapi_relationships
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h6>
+<a id="jsonapi_links" class="anchor" href="#jsonapi_links" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>jsonapi_links</code>
+</h6>
+
+<p>You can add relationship routes in with <code>jsonapi_links</code>, for example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">Rails</span>.application.routes.draw <span class="pl-k">do</span>
+  jsonapi_resources <span class="pl-c1">:contacts</span> <span class="pl-k">do</span>
+    jsonapi_links <span class="pl-c1">:phone_numbers</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>Gives the following routes:</p>
+
+<pre><code>contact_relationships_phone_numbers GET    /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#show_relationship {:relationship=&gt;"phone_numbers"}
+                            POST   /contacts/:contact_id/relationships/phone-numbers(.:format)       contacts#create_relationship {:relationship=&gt;"phone_numbers"}
+                            DELETE /contacts/:contact_id/relationships/phone-numbers/:keys(.:format) contacts#destroy_relationship {:relationship=&gt;"phone_numbers"}
+                   contacts GET    /contacts(.:format)                                       contacts#index
+                            POST   /contacts(.:format)                                       contacts#create
+                    contact GET    /contacts/:id(.:format)                                   contacts#show
+                            PATCH  /contacts/:id(.:format)                                   contacts#update
+                            PUT    /contacts/:id(.:format)                                   contacts#update
+                            DELETE /contacts/:id(.:format)                                   contacts#destroy
+
+</code></pre>
+
+<p>The new routes allow you to show, create and destroy the relationships between resources.</p>
+
+<h6>
+<a id="jsonapi_related_resources" class="anchor" href="#jsonapi_related_resources" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>jsonapi_related_resources</code>
+</h6>
+
+<p>Creates a nested route to GET the related has_many resources. For example:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">Rails</span>.application.routes.draw <span class="pl-k">do</span>
+  jsonapi_resources <span class="pl-c1">:contacts</span> <span class="pl-k">do</span>
+    jsonapi_related_resources <span class="pl-c1">:phone_numbers</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span>
+</pre></div>
+
+<p>gives the following routes:</p>
+
+<pre><code>               Prefix Verb   URI Pattern                                   Controller#Action
+contact_phone_numbers GET    /contacts/:contact_id/phone-numbers(.:format) phone_numbers#get_related_resources {:relationship=&gt;"phone_numbers", :source=&gt;"contacts"}
+             contacts GET    /contacts(.:format)                           contacts#index
+                      POST   /contacts(.:format)                           contacts#create
+              contact GET    /contacts/:id(.:format)                       contacts#show
+                      PATCH  /contacts/:id(.:format)                       contacts#update
+                      PUT    /contacts/:id(.:format)                       contacts#update
+                      DELETE /contacts/:id(.:format)                       contacts#destroy
+
+</code></pre>
+
+<p>A single additional route was created to allow you GET the phone numbers through the contact.</p>
+
+<h6>
+<a id="jsonapi_related_resource" class="anchor" href="#jsonapi_related_resource" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><code>jsonapi_related_resource</code>
+</h6>
+
+<p>Like <code>jsonapi_related_resources</code>, but for has_one related resources.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">Rails</span>.application.routes.draw <span class="pl-k">do</span>
+  jsonapi_resources <span class="pl-c1">:phone_numbers</span> <span class="pl-k">do</span>
+    jsonapi_related_resource <span class="pl-c1">:contact</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>gives the following routes:</p>
+
+<pre><code>              Prefix Verb   URI Pattern                                       Controller#Action
+phone_number_contact GET    /phone-numbers/:phone_number_id/contact(.:format) contacts#get_related_resource {:relationship=&gt;"contact", :source=&gt;"phone_numbers"}
+       phone_numbers GET    /phone-numbers(.:format)                          phone_numbers#index
+                     POST   /phone-numbers(.:format)                          phone_numbers#create
+        phone_number GET    /phone-numbers/:id(.:format)                      phone_numbers#show
+                     PATCH  /phone-numbers/:id(.:format)                      phone_numbers#update
+                     PUT    /phone-numbers/:id(.:format)                      phone_numbers#update
+                     DELETE /phone-numbers/:id(.:format)                      phone_numbers#destroy
+
+</code></pre>
+
+<h3>
+<a id="authorization" class="anchor" href="#authorization" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authorization</h3>
+
+<p>Currently <code>json-api-resources</code> doesn't come with built-in primitives for authorization. However multiple users of the framework have come up with different approaches, check out:</p>
+
+<ul>
+<li><a href="https://github.com/venuu/jsonapi-authorization">jsonapi-authorization</a></li>
+<li><a href="https://github.com/togglepro/pundit-resources">pundit-resources</a></li>
+</ul>
+
+<p>Refer to the comments/discussion <a href="https://github.com/cerebris/jsonapi-resources/issues/16#issuecomment-222438975">here</a> for the differences between approaches</p>
+
+<h3>
+<a id="resource-caching" class="anchor" href="#resource-caching" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Resource Caching</h3>
+
+<p>To improve the response time of GET requests, JR can cache the generated JSON fragments for
+Resources which are suitable. First, set <code>config.resource_cache</code> to an ActiveSupport cache store:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">JSONAPI</span>.configure <span class="pl-k">do </span>|<span class="pl-smi">config</span>|
+  config.resource_cache <span class="pl-k">=</span> <span class="pl-c1">Rails</span>.cache
+<span class="pl-k">end</span></pre></div>
+
+<p>Then, on each Resource you want to cache, call the <code>caching</code> method:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  caching
+<span class="pl-k">end</span></pre></div>
+
+<p>See the caveats section below for situations where you might not want to enable caching on particular
+Resources.</p>
+
+<p>The Resource model must also have a field that is updated whenever any of the model's data changes.
+The default Rails timestamps handle this pretty well, and the default cache key field is <code>updated_at</code> for this reason.
+You can use an alternate field (which you are then responsible for updating) by calling the <code>cache_field</code> method:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  caching
+  cache_field <span class="pl-c1">:change_counter</span>
+
+  before_save <span class="pl-k">do</span>
+    <span class="pl-k">if</span> <span class="pl-v">self</span>.change_counter.nil?
+      <span class="pl-v">self</span>.change_counter <span class="pl-k">=</span> <span class="pl-c1">1</span>
+    <span class="pl-k">elsif</span> <span class="pl-v">self</span>.changed?
+      <span class="pl-v">self</span>.change_counter <span class="pl-k">+=</span> <span class="pl-c1">1</span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+
+  after_touch <span class="pl-k">do</span>
+    update_attribute(<span class="pl-c1">:change_counter</span>, <span class="pl-v">self</span>.change_counter <span class="pl-k">+</span> <span class="pl-c1">1</span>)
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>If context affects the content of the serialized result, you must define a class method <code>attribute_caching_context</code> on that Resource, which should return a different value for contexts that produce different results. In particular, if the <code>meta</code> or <code>fetchable_fields</code> methods, or any method providing the actual content of an attribute, changes depending on context, then you must provide <code>attribute_caching_context</code>. The actual value it
+returns isn't important, what matters is that the value must be different if any relevant part of the context is different.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PostResource<span class="pl-e"> &lt; JSONAPI::Resource</span></span>
+  caching
+
+  attributes <span class="pl-c1">:title</span>, <span class="pl-c1">:body</span>, <span class="pl-c1">:secret_field</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">fetchable_fields</span>
+    <span class="pl-k">return</span> <span class="pl-k">super</span> <span class="pl-k">if</span> context.user.superuser?
+    <span class="pl-k">return</span> <span class="pl-k">super</span> <span class="pl-k">-</span> [<span class="pl-c1">:secret_field</span>]
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">meta</span>
+    <span class="pl-k">if</span> context.user.can_see_creation_dates?
+      <span class="pl-k">return</span> { <span class="pl-c1">created:</span> _model.created_at }
+    <span class="pl-k">else</span>
+      <span class="pl-k">return</span> {}
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">self.attribute_caching_context</span>(<span class="pl-smi">context</span>)
+    <span class="pl-k">return</span> {
+      <span class="pl-c1">admin:</span> context.user.superuser?,
+      <span class="pl-c1">creation_date_viewer:</span> context.user.can_see_creation_dates?
+    }
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h4>
+<a id="caching-caveats" class="anchor" href="#caching-caveats" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Caching Caveats</h4>
+
+<ul>
+<li>Models for cached Resources must update a cache key field whenever their data changes. However, if you bypass Rails and e.g. alter the database row directly without changing the <code>updated_at</code> field, the cached entry for that resource will be inaccurate. Also, <code>updated_at</code> provides a narrow race condition window; if a resource is updated twice in the same second, it's possible that only the first update will be cached. If you're concerned about this, you will need to find a way to make sure your models' cache fields change on every update, e.g. by using a unique random value or a monotonic clock.</li>
+<li>If an attribute's value is affected by related resources, e.g. the <code>spoken_languages</code> example above, then changes to the related resource must also touch the cache field on the resource that uses it. The <code>belongs_to</code> relation in ActiveRecord provides a <code>:touch</code> option for this purpose.</li>
+<li>JR does not actively clean the cache, so you must use an ActiveSupport cache that automatically expires old entries, or you will leak resources. The MemoryCache built in to Rails does this by default, but other caches will have to be configured with an <code>:expires_in</code> option and/or a cache-specific clearing mechanism.</li>
+<li>Similarly, if you make a substantial code change that affects a lot of serialized representations (i.e. changing the way an attribute is shown), you'll have to clear out all relevant cache entries yourself. The simplest way to do this is to run <code>JSONAPI.configuration.resource_cache.clear</code> from the console. You do not have to do this after merely adding or removing attributes; only changes that affect the actual content of attributes require manual cache clearing.</li>
+<li>If resource caching is enabled at all, then custom relationship methods on any resource might not always be used, even resources that are not cached. For example, if you manually define a <code>comments</code> method or <code>records_for_comments</code> method on a Resource that <code>has_many :comments</code>, you cannot expect it to be used when caching is enabled, even if you never call <code>caching</code> on that particular Resource. Instead, you should use relationship name lambdas.</li>
+<li>The above also applies to custom <code>find</code> or <code>find_by_key</code> methods. Instead, if you are using resource caching anywhere in your app, try overriding the <code>find_records</code> method to return an appropriate <code>ActiveRecord::Relation</code>.</li>
+<li>Caching relies on ActiveRecord features; you cannot enable caching on resources based on non-AR models, e.g. PORO objects or singleton resources.</li>
+<li>If you write a custom <code>ResourceSerializer</code> which takes new options, then you must define <code>config_description</code> to include those options if they might impact the serialized value:</li>
+</ul>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">MySerializer<span class="pl-e"> &lt; JSONAPI::ResourceSerializer</span></span>
+  <span class="pl-k">def</span> <span class="pl-en">initialize</span>(<span class="pl-smi">primary_resource_klass</span>, <span class="pl-smi">options</span> <span class="pl-k">=</span> {})
+    <span class="pl-smi">@my_special_option</span> <span class="pl-k">=</span> options.delete(<span class="pl-c1">:my_special_option</span>)
+    <span class="pl-k">super</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">config_description</span>(<span class="pl-smi">resource_klass</span>)
+    <span class="pl-k">super</span>.merge({<span class="pl-c1">my_special_option:</span> <span class="pl-smi">@my_special_option</span>})
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<h2>
+<a id="configuration" class="anchor" href="#configuration" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Configuration</h2>
+
+<p>JR has a few configuration options. Some have already been mentioned above. To set configuration options create an
+initializer and add the options you wish to set. All options have defaults, so you only need to set the options that
+are different. The default options are shown below.</p>
+
+<p>If using custom classes (such as a CustomPaginator), be sure to require them at the top of the initializer before usage.</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">JSONAPI</span>.configure <span class="pl-k">do </span>|<span class="pl-smi">config</span>|
+  <span class="pl-c">#:underscored_key, :camelized_key, :dasherized_key, or custom</span>
+  config.json_key_format <span class="pl-k">=</span> <span class="pl-c1">:dasherized_key</span>
+
+  <span class="pl-c">#:underscored_route, :camelized_route, :dasherized_route, or custom</span>
+  config.route_format <span class="pl-k">=</span> <span class="pl-c1">:dasherized_route</span>
+
+  <span class="pl-c"># Default Processor, used if a resource specific one is not defined.</span>
+  <span class="pl-c"># Must be a class</span>
+  config.default_processor_klass <span class="pl-k">=</span> <span class="pl-c1">JSONAPI</span>::<span class="pl-c1">Processor</span>
+
+  <span class="pl-c">#:integer, :uuid, :string, or custom (provide a proc)</span>
+  config.resource_key_type <span class="pl-k">=</span> <span class="pl-c1">:integer</span>
+
+  <span class="pl-c"># optional request features</span>
+  config.allow_include <span class="pl-k">=</span> <span class="pl-c1">true</span>
+  config.allow_sort <span class="pl-k">=</span> <span class="pl-c1">true</span>
+  config.allow_filter <span class="pl-k">=</span> <span class="pl-c1">true</span>
+
+  <span class="pl-c"># How to handle unsupported attributes and relationships which are provided in the request</span>
+  <span class="pl-c"># true =&gt; raises an error</span>
+  <span class="pl-c"># false =&gt; allows the request to continue. A warning is included in the response meta data indicating</span>
+  <span class="pl-c"># the fields which were ignored. This is useful for client libraries which send extra parameters.</span>
+  config.raise_if_parameters_not_allowed <span class="pl-k">=</span> <span class="pl-c1">true</span>
+
+  <span class="pl-c"># :none, :offset, :paged, or a custom paginator name</span>
+  config.default_paginator <span class="pl-k">=</span> <span class="pl-c1">:none</span>
+
+  <span class="pl-c"># Output pagination links at top level</span>
+  config.top_level_links_include_pagination <span class="pl-k">=</span> <span class="pl-c1">true</span>
+
+  config.default_page_size <span class="pl-k">=</span> <span class="pl-c1">10</span>
+  config.maximum_page_size <span class="pl-k">=</span> <span class="pl-c1">20</span>
+
+  <span class="pl-c"># Output the record count in top level meta data for find operations</span>
+  config.top_level_meta_include_record_count <span class="pl-k">=</span> <span class="pl-c1">false</span>
+  config.top_level_meta_record_count_key <span class="pl-k">=</span> <span class="pl-c1">:record_count</span>
+
+  <span class="pl-c"># For :paged paginators, the following are also available</span>
+  config.top_level_meta_include_page_count <span class="pl-k">=</span> <span class="pl-c1">false</span>
+  config.top_level_meta_page_count_key <span class="pl-k">=</span> <span class="pl-c1">:page_count</span>
+
+  config.use_text_errors <span class="pl-k">=</span> <span class="pl-c1">false</span>
+
+  <span class="pl-c"># List of classes that should not be rescued by the operations processor.</span>
+  <span class="pl-c"># For example, if you use Pundit for authorization, you might</span>
+  <span class="pl-c"># raise a Pundit::NotAuthorizedError at some point during operations</span>
+  <span class="pl-c"># processing. If you want to use Rails' `rescue_from` macro to</span>
+  <span class="pl-c"># catch this error and render a 403 status code, you should add</span>
+  <span class="pl-c"># the `Pundit::NotAuthorizedError` to the `exception_class_whitelist`.</span>
+  <span class="pl-c"># Subclasses of the whitelisted classes will also be whitelisted.</span>
+  config.exception_class_whitelist <span class="pl-k">=</span> []
+
+  <span class="pl-c"># Resource Linkage</span>
+  <span class="pl-c"># Controls the serialization of resource linkage for non compound documents</span>
+  <span class="pl-c"># NOTE: always_include_to_many_linkage_data is not currently implemented</span>
+  config.always_include_to_one_linkage_data <span class="pl-k">=</span> <span class="pl-c1">false</span>
+
+  <span class="pl-c"># Relationship reflection invokes the related resource when updates</span>
+  <span class="pl-c"># are made to a has_many relationship. By default relationship_reflection</span>
+  <span class="pl-c"># is turned off because it imposes a small performance penalty.</span>
+  config.use_relationship_reflection <span class="pl-k">=</span> <span class="pl-c1">false</span>
+
+  <span class="pl-c"># Allows transactions for creating and updating records</span>
+  <span class="pl-c"># Set this to false if your backend does not support transactions (e.g. Mongodb)</span>
+  config.allow_transactions <span class="pl-k">=</span> <span class="pl-c1">true</span>
+
+  <span class="pl-c"># Formatter Caching</span>
+  <span class="pl-c"># Set to false to disable caching of string operations on keys and links.</span>
+  <span class="pl-c"># Note that unlike the resource cache, formatter caching is always done</span>
+  <span class="pl-c"># internally in-memory and per-thread; no ActiveSupport::Cache is used.</span>
+  config.cache_formatters <span class="pl-k">=</span> <span class="pl-c1">true</span>
+
+  <span class="pl-c"># Resource cache</span>
+  <span class="pl-c"># An ActiveSupport::Cache::Store or similar, used by Resources with caching enabled.</span>
+  <span class="pl-c"># Set to `nil` (the default) to disable caching, or to `Rails.cache` to use the</span>
+  <span class="pl-c"># Rails cache store.</span>
+  config.resource_cache <span class="pl-k">=</span> <span class="pl-c1">nil</span>
+
+  <span class="pl-c"># Default resource cache field</span>
+  <span class="pl-c"># On Resources with caching enabled, this field will be used to check for out-of-date</span>
+  <span class="pl-c"># cache entries, unless overridden on a specific Resource. Defaults to "updated_at".</span>
+  config.default_resource_cache_field <span class="pl-k">=</span> <span class="pl-c1">:updated_at</span>
+
+  <span class="pl-c"># Resource cache digest function</span>
+  <span class="pl-c"># Provide a callable that returns a unique value for string inputs with</span>
+  <span class="pl-c"># low chance of collision. The default is SHA256 base64.</span>
+  config.resource_cache_digest_function <span class="pl-k">=</span> <span class="pl-c1">Digest</span>::<span class="pl-c1">SHA2</span>.<span class="pl-k">new</span>.method(<span class="pl-c1">:base64digest</span>)
+
+  <span class="pl-c"># Resource cache usage reporting</span>
+  <span class="pl-c"># Optionally provide a callable which JSONAPI will call with information about cache</span>
+  <span class="pl-c"># performance. Should accept three arguments: resource name, hits count, misses count.</span>
+  config.resource_cache_usage_report_function <span class="pl-k">=</span> <span class="pl-c1">nil</span>
+<span class="pl-k">end</span></pre></div>
+
+<h2>
+<a id="contributing" class="anchor" href="#contributing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Contributing</h2>
+
+<ol>
+<li>Fork it ( <a href="http://github.com/cerebris/jsonapi-resources/fork">http://github.com/cerebris/jsonapi-resources/fork</a> )</li>
+<li>Create your feature branch (<code>git checkout -b my-new-feature</code>)</li>
+<li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
+<li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
+<li>Create a new Pull Request</li>
+</ol>
+
+<h2>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>License</h2>
+
+<p>Copyright 2014-2016 Cerebris Corporation. MIT License (see LICENSE for details).</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/cerebris/jsonapi-resources">Jsonapi-resources</a> is maintained by <a href="https://github.com/cerebris">cerebris</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
